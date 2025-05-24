@@ -1,3 +1,3 @@
-from app.adapters.persistence.models import Base
+from app.shared.database import Base
 
 __all__ = ['Base'] 
