@@ -6,10 +6,14 @@ from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
+from datetime import datetime, UTC
 
 from app.main import app
 from app.adapters.persistence.models import Base
 from app.infrastructure.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
+from app.domain.entities.user import User, Role, UserStatus
+from app.domain.services.auth_service import AuthService
+from app.domain.value_objects.auth import UserClaims
 
 # Test Database
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
@@ -187,3 +191,64 @@ def sample_device_command():
         "timestamp": "2024-01-01T10:00:00Z",
         "request_id": "cmd_123"
     }
+
+@pytest.fixture
+def sample_user():
+    """Sample user for testing"""
+    return User(
+        id=1,
+        email="test@example.com",
+        hashed_password="$2b$12$test.hash.here",
+        full_name="Test User",
+        roles=[Role.USER],
+        status=UserStatus.ACTIVE,
+        created_at=datetime.now(UTC)
+    )
+
+@pytest.fixture
+def sample_admin_user():
+    """Sample admin user for testing"""
+    return User(
+        id=2,
+        email="admin@example.com",
+        hashed_password="$2b$12$admin.hash.here",
+        full_name="Admin User",
+        roles=[Role.ADMIN, Role.OPERATOR],
+        status=UserStatus.ACTIVE,
+        created_at=datetime.now(UTC)
+    )
+
+@pytest.fixture
+def auth_service():
+    """AuthService instance for testing"""
+    return AuthService()
+
+@pytest.fixture
+def mock_user_repository():
+    """Mock user repository for testing"""
+    return AsyncMock()
+
+@pytest.fixture
+def valid_jwt_token(auth_service, sample_user):
+    """Valid JWT token for testing"""
+    return auth_service.generate_access_token(sample_user)
+
+@pytest.fixture
+def valid_user_claims():
+    """Valid user claims for testing"""
+    return UserClaims(
+        user_id=1,
+        email="test@example.com",
+        full_name="Test User",
+        roles=["user"]
+    )
+
+@pytest.fixture
+def admin_user_claims():
+    """Admin user claims for testing"""
+    return UserClaims(
+        user_id=2,
+        email="admin@example.com",
+        full_name="Admin User",
+        roles=["admin", "operator"]
+    )

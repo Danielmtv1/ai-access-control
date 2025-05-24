@@ -14,14 +14,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
-      - DEBUG=False
+      - DEBUG=True
     depends_on:
       - db
       - mqtt
     volumes:
-      - ./fastapi_access_control:/app
-      - ./entrypoint.dev.sh:/app/entrypoint.dev.sh
-    entrypoint: ["/app/entrypoint.dev.sh"]
+      - ./fastapi_access_control:/app:delegated
+    user: "1000:1000"
+    entrypoint: ["/bin/bash", "/app/entrypoint.dev.sh"]
     networks:
       - access_control_network
 
