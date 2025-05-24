@@ -3,15 +3,16 @@ import os
 import sys
 from logging.config import fileConfig
 
+# Add the project root directory to the Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, project_root)
+
 # from sqlalchemy import engine_from_config # Removed
 from sqlalchemy.ext.asyncio import create_async_engine # Import async engine
 from sqlalchemy import pool
 
 from alembic import context
 from app.config import get_settings # Import get_settings
-
-# Add the parent directory of this file to the Python path
-sys.path.append(os.path.abspath(os.path.join(__file__, "../..")))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

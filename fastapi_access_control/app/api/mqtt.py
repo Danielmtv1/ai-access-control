@@ -16,8 +16,9 @@ class MqttMessageSchema(BaseModel):
     message: str
     timestamp: datetime
 
-    class Config:
-        orm_mode = True # Enable ORM mode for Pydantic
+    model_config = {
+        "from_attributes": True
+    }
 
 # Dependency to get the MqttMessageService
 def get_mqtt_message_service(request: Request) -> MqttMessageService:

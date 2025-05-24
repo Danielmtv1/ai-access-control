@@ -1,8 +1,12 @@
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.declarative import declarative_base
 from typing import AsyncGenerator
 from ..config import get_settings
+
+# Create Base class for all models
+Base = declarative_base()
 
 # Get DB URL from settings and convert to asyncpg dialect
 settings = get_settings()
