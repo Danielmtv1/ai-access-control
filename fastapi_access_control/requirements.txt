@@ -1,27 +1,33 @@
 # Core Framework
-fastapi>=0.104.0,<0.110.0    # Permite actualizaciones de seguridad
-uvicorn[standard]>=0.24.0,<0.30.0
+fastapi>=0.104.1
+uvicorn>=0.24.0
 
 # Database & ORM
-sqlalchemy==2.0.23
-alembic==1.12.1
-asyncpg==0.29.0          # PostgreSQL async driver (principal)
-# psycopg2-binary==2.9.7   # Comentado - usar solo para migraciones si es necesario
+sqlalchemy>=2.0.23
+alembic>=1.12.1
+asyncpg>=0.29.0
 
 # Data Validation & Serialization
-pydantic==2.5.0
-pydantic-settings==2.0.3
+pydantic>=2.5.2
+pydantic-settings>=2.1.0
+email-validator>=2.1.0
 
 # MQTT Message Broker
-paho-mqtt==1.6.1          # Official MQTT client
-asyncio-mqtt==0.16.1      # Async MQTT wrapper
-gmqtt==0.6.16             # Alternative high-performance async MQTT client
+paho-mqtt==1.6.1          
+asyncio-mqtt==0.16.2      
+gmqtt==0.6.16             
 
 # Authentication & Security
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-bcrypt==4.1.2
-python-multipart==0.0.6
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1
+python-multipart>=0.0.6
+itsdangerous>=2.1.2
+cryptography>=41.0.7      
+pyjwt>=2.8.0             
+python-jose[cryptography]>=3.3.0  
+authlib>=1.3.0           
+itsdangerous>=2.1.2      
 
 # HTTP Client
 httpx==0.25.2
@@ -40,7 +46,16 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
 pytest-mock==3.12.0
-factory-boy==3.3.0       # Test data factories
+pytest-xdist==3.5.0       
+pytest-env==1.1.3       
+pytest-sugar==0.9.7      
+pytest-timeout==2.2.0     
+pytest-randomly==3.15.0   
+factory-boy==3.3.0        
+faker==22.6.0           
+freezegun==1.4.0        
+responses==0.25.0        
+aiosqlite==0.19.0        
 
 # Code Quality
 black==23.11.0
@@ -49,17 +64,17 @@ flake8==6.1.0
 mypy==1.7.1
 
 # Environment & Configuration
-python-dotenv==1.0.0
+python-dotenv>=1.0.0
 
 # Utilities
 python-dateutil==2.8.2
 pytz==2023.3
-uuid7==0.1.0             # UUID v7 for better performance
-tenacity==8.2.3          # Retry logic
+uuid7==0.1.0             
+tenacity==8.2.3          
 
 # Performance & Caching
-redis==5.0.1             # Caching layer
-orjson==3.9.10           # Faster JSON serialization
+redis==5.0.1             
+orjson==3.9.10          
 
 # Production
-gunicorn==21.2.0         # WSGI server for production
+gunicorn==21.2.0        
