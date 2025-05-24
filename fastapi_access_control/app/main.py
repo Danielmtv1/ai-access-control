@@ -4,6 +4,7 @@ import logging
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from .api import mqtt
+from .interfaces.api.v1 import auth
 from contextlib import asynccontextmanager
 from app.shared.database import AsyncSessionLocal
 from .infrastructure.asyncio_mqtt_adapter import AsyncioMqttAdapter
@@ -90,11 +91,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(mqtt.router)
+# Include Routers
+app.include_router(mqtt.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the Access Control System"}
+    return {
+        "message": "Welcome to the Access Control System",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "endpoints": {
+            "auth": "/api/v1/auth",
+            "mqtt": "/api/v1/mqtt",
+        }
+    }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "timestamp": "2024-01-01T00:00:00Z"  # Use actual timestamp
+    }
 
 if __name__ == "__main__":
     import uvicorn
