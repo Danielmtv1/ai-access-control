@@ -5,8 +5,7 @@ from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from .api import mqtt
 from contextlib import asynccontextmanager
-from .domain.mqtt_message import Base
-from .infrastructure.database import AsyncSessionLocal
+from app.shared.database import AsyncSessionLocal
 from .infrastructure.asyncio_mqtt_adapter import AsyncioMqttAdapter
 from .domain.services import MqttMessageService
 from fastapi.responses import JSONResponse
@@ -18,7 +17,8 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Dependency Injection Setup ---
-    db_session_factory = AsyncSessionLocal
+    def db_session_factory():
+        return AsyncSessionLocal()
 
     from .infrastructure.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
     mqtt_message_repository = SqlAlchemyMqttMessageRepository(session_factory=db_session_factory)

@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, DateTime, func
-from ..infrastructure.database import Base
+from app.shared.database.base import Base
 
 class MqttMessage(Base):
     __tablename__ = "mqtt_messages"
@@ -8,4 +8,3 @@ class MqttMessage(Base):
     topic = Column(String, index=True)
     message = Column(String)
     timestamp = Column(DateTime, server_default=func.now())
-

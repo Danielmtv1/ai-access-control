@@ -1,6 +1,6 @@
 from sqlalchemy.future import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-from typing import List
+from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Callable
 from ..domain.mqtt_message import MqttMessage
 from ..ports.mqtt_message_repository_port import MqttMessageRepositoryPort
 from sqlalchemy.exc import SQLAlchemyError # Catch specific SQLAlchemy errors
@@ -10,8 +10,13 @@ from ..domain.exceptions import RepositoryError
 logger = logging.getLogger(__name__)
 
 class SqlAlchemyMqttMessageRepository(MqttMessageRepositoryPort):
-    # Change session_factory type hint to async_sessionmaker
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
+    def __init__(self, session_factory: Callable[[], AsyncSession]):
+        """
+        Initialize repository with session factory.
+        
+        Args:
+            session_factory: Callable that returns AsyncSession instance
+        """
         self.session_factory = session_factory
 
     async def save(self, message: MqttMessage) -> MqttMessage:
