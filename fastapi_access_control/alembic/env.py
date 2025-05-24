@@ -7,12 +7,10 @@ from logging.config import fileConfig
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, project_root)
 
-# from sqlalchemy import engine_from_config # Removed
-from sqlalchemy.ext.asyncio import create_async_engine # Import async engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import pool
-
 from alembic import context
-from app.config import get_settings # Import get_settings
+from app.config import get_settings
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -23,9 +21,11 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-from app.domain.mqtt_message import Base
+
+from app.shared.database.base import Base
+from app.domain.mqtt_message import MqttMessage  # Import all models here
+
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -88,7 +88,6 @@ async def run_migrations_online() -> None:
 
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations_online)
-
 
 if context.is_offline_mode():
     run_migrations_offline()
