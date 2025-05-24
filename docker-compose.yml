@@ -12,7 +12,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/access_control
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
       - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - DEBUG=False
     depends_on:

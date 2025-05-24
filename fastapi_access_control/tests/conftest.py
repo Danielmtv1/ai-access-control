@@ -3,12 +3,13 @@ import pytest
 import asyncio
 from typing import List, Tuple, Any, Dict
 from unittest.mock import AsyncMock, MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 
 from app.main import app
 from app.adapters.persistence.models import Base
+from app.infrastructure.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 
 # Test Database
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
@@ -42,8 +43,17 @@ async def db_session(test_db):
     async with async_session() as session:
         yield session
 
+@pytest.fixture
+async def mqtt_repository(test_db):
+    """Create MQTT repository for tests"""
+    async_session = async_sessionmaker(
+        test_db, class_=AsyncSession, expire_on_commit=False
+    )
+    repository = SqlAlchemyMqttMessageRepository(async_session)
+    yield repository
+
 class MockMQTTClient:
-    """Mock MQTT Client para testing"""
+    """Mock MQTT Client for testing"""
     
     def __init__(self):
         self.published_messages: List[Tuple[str, str, int]] = []
@@ -62,7 +72,7 @@ class MockMQTTClient:
         self.subscribed_topics.clear()
     
     async def publish(self, topic: str, payload: str, qos: int = 1, retain: bool = False):
-        """Mock publish - guarda el mensaje para verificación"""
+        """Mock publish - stores message for verification"""
         self.published_messages.append((topic, payload, qos))
     
     async def subscribe(self, topic: str, qos: int = 1):
