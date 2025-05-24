@@ -1,6 +1,6 @@
 from sqlalchemy.future import select
-from sqlalchemy.orm import Session # Keep Session for type hinting
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from typing import List
 from ..domain.mqtt_message import MqttMessage
 from ..ports.mqtt_message_repository_port import MqttMessageRepositoryPort
 from sqlalchemy.exc import SQLAlchemyError # Catch specific SQLAlchemy errors
@@ -30,12 +30,12 @@ class SqlAlchemyMqttMessageRepository(MqttMessageRepositoryPort):
                 logger.error(f"An unexpected error occurred saving MQTT message: {e}")
                 raise RepositoryError(f"Unexpected error saving MQTT message: {e}") from e # Raise custom domain exception
 
-    async def get_all(self) -> list[MqttMessage]:
+    async def get_all(self) -> List[MqttMessage]:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(select(MqttMessage))
                 messages = result.scalars().all()
-                return messages
+                return list(messages)
             except SQLAlchemyError as e: # Catch specific SQLAlchemy errors
                 logger.error(f"Database error retrieving MQTT messages: {e}") # Log the specific error
                 raise RepositoryError(f"Error retrieving MQTT messages: {e}") from e # Raise custom domain exception
