@@ -1,0 +1,65 @@
+# Core Framework
+fastapi>=0.104.0,<0.110.0    # Permite actualizaciones de seguridad
+uvicorn[standard]>=0.24.0,<0.30.0
+
+# Database & ORM
+sqlalchemy==2.0.23
+alembic==1.12.1
+asyncpg==0.29.0          # PostgreSQL async driver (principal)
+# psycopg2-binary==2.9.7   # Comentado - usar solo para migraciones si es necesario
+
+# Data Validation & Serialization
+pydantic==2.5.0
+pydantic-settings==2.0.3
+
+# MQTT Message Broker
+paho-mqtt==1.6.1          # Official MQTT client
+asyncio-mqtt==0.16.1      # Async MQTT wrapper
+gmqtt==0.6.16             # Alternative high-performance async MQTT client
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+python-multipart==0.0.6
+
+# HTTP Client
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Google AI SDK
+google-cloud-aiplatform==1.38.1
+google-auth==2.23.4
+
+# Monitoring & Observability
+prometheus-client==0.19.0
+structlog==23.2.0
+
+# Development & Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+factory-boy==3.3.0       # Test data factories
+
+# Code Quality
+black==23.11.0
+isort==5.12.0
+flake8==6.1.0
+mypy==1.7.1
+
+# Environment & Configuration
+python-dotenv==1.0.0
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+uuid7==0.1.0             # UUID v7 for better performance
+tenacity==8.2.3          # Retry logic
+
+# Performance & Caching
+redis==5.0.1             # Caching layer
+orjson==3.9.10           # Faster JSON serialization
+
+# Production
+gunicorn==21.2.0         # WSGI server for production
