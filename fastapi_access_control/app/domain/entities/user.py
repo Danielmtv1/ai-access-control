@@ -24,6 +24,7 @@ class User:
     roles: List[Role]
     status: UserStatus
     created_at: datetime
+    updated_at: datetime
     last_login: Optional[datetime] = None
     
     def is_active(self) -> bool:

@@ -16,8 +16,8 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from app.shared.database.base import Base
-from app.domain.mqtt_message import MqttMessage
-from app.infrastructure.persistence.user_model import UserModel
+from app.domain.entities.mqtt_message import MqttMessage
+from app.infrastructure.database.models.user import UserModel
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
