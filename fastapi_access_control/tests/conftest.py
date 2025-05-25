@@ -10,7 +10,7 @@ from datetime import datetime, UTC
 
 from app.main import app
 from app.adapters.persistence.models import Base
-from app.infrastructure.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
+from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 from app.domain.entities.user import User, Role, UserStatus
 from app.domain.services.auth_service import AuthService
 from app.domain.value_objects.auth import UserClaims

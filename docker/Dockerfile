@@ -35,6 +35,9 @@ RUN sed -i 's/\r$//' /app/scripts/init_admin_user.py
 # Set PYTHONPATH to include the application directory
 ENV PYTHONPATH=/app
 
+# Install development dependencies
+RUN pip install -e .
+
 # Switch to non-root user
 USER appuser
 

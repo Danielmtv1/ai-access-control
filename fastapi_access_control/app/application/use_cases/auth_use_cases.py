@@ -5,6 +5,10 @@ from ...domain.value_objects.auth import TokenPair, UserClaims
 from ...ports.user_repository_port import UserRepositoryPort
 from ...domain.exceptions import DomainError
 from datetime import datetime, UTC
+import logging
+
+# Configurar logging
+logger = logging.getLogger(__name__)
 
 class AuthenticationError(DomainError):
     """Authentication specific error"""
@@ -14,27 +18,33 @@ class AuthenticateUserUseCase:
     """Use case for user authentication"""
     
     def __init__(self, 
-                 user_repository: UserRepositoryPort, 
-                 auth_service: AuthService):
-        self.user_repository = user_repository
+                 auth_service: AuthService,
+                 user_repository: UserRepositoryPort):
         self.auth_service = auth_service
+        self.user_repository = user_repository
     
     async def execute(self, email: str, password: str) -> TokenPair:
         """Authenticate user and return token pair"""
+        logger.info(f"Buscando usuario con email: {email}")
         # Get user by email
         user = await self.user_repository.get_by_email(email)
         
         if not user:
+            logger.error(f"Usuario no encontrado: {email}")
             raise AuthenticationError("Invalid email or password")
         
+        logger.info(f"Usuario encontrado: {email}")
         # Verify password
         if not self.auth_service.verify_password(password, user.hashed_password):
+            logger.error(f"Contraseña incorrecta para usuario: {email}")
             raise AuthenticationError("Invalid email or password")
         
         # Check if user is active
         if not user.is_active():
+            logger.error(f"Usuario inactivo: {email}")
             raise AuthenticationError("User account is not active")
         
+        logger.info(f"Autenticación exitosa para usuario: {email}")
         # Update last login
         user.last_login = datetime.utcnow()
         await self.user_repository.update(user)
@@ -98,6 +108,7 @@ class CreateUserUseCase:
             roles = [Role(role) for role in roles]
         
         # Create user entity
+        now = datetime.now(UTC).replace(tzinfo=None)
         user = User(
             id=0,  # Will be set by database
             email=email,
@@ -105,7 +116,8 @@ class CreateUserUseCase:
             full_name=full_name,
             roles=roles,
             status=UserStatus.ACTIVE,
-            created_at=datetime.now(UTC)
+            created_at=now,
+            updated_at=now
         )
         
         return await self.user_repository.create(user) 
