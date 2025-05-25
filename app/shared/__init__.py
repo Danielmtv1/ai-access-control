@@ -1,0 +1,1 @@
+"""Módulo compartido para componentes comunes""" 
