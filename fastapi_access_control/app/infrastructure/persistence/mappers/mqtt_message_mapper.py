@@ -1,9 +1,15 @@
+from datetime import datetime
+from typing import Optional
+
 from app.domain.entities.mqtt_message import MqttMessage
-from app.infrastructure.persistence.models.mqtt_message_model import MqttMessageModel
+from app.infrastructure.database.models.mqtt_message import MqttMessageModel
 
 class MqttMessageMapper:
+    """Mapper for converting between MqttMessage domain entity and database model"""
+    
     @staticmethod
     def to_domain(model: MqttMessageModel) -> MqttMessage:
+        """Convert database model to domain entity"""
         return MqttMessage(
             id=model.id,
             topic=model.topic,
@@ -13,6 +19,7 @@ class MqttMessageMapper:
     
     @staticmethod
     def to_model(entity: MqttMessage) -> MqttMessageModel:
+        """Convert domain entity to database model"""
         return MqttMessageModel(
             id=entity.id,
             topic=entity.topic,

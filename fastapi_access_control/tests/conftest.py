@@ -8,15 +8,15 @@ from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from datetime import datetime, UTC
 
-from app.main import app
-from app.adapters.persistence.models import Base
+from app.infrastructure.database.base import Base
 from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 from app.domain.entities.user import User, Role, UserStatus
 from app.domain.services.auth_service import AuthService
 from app.domain.value_objects.auth import UserClaims
+from app.domain.entities.mqtt_message import MqttMessage
 
 # Test Database
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/postgres_test"
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -41,19 +41,16 @@ async def test_db():
 @pytest.fixture
 async def db_session(test_db):
     """Create database session for tests"""
-    async_session = sessionmaker(
+    async_session = async_sessionmaker(
         test_db, class_=AsyncSession, expire_on_commit=False
     )
     async with async_session() as session:
         yield session
 
 @pytest.fixture
-async def mqtt_repository(test_db):
+async def mqtt_repository(db_session):
     """Create MQTT repository for tests"""
-    async_session = async_sessionmaker(
-        test_db, class_=AsyncSession, expire_on_commit=False
-    )
-    repository = SqlAlchemyMqttMessageRepository(async_session)
+    repository = SqlAlchemyMqttMessageRepository(db_session)
     yield repository
 
 class MockMQTTClient:
