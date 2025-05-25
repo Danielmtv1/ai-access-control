@@ -13,7 +13,6 @@ services:
       - .env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/postgres
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - DEBUG=True
     depends_on:
       - db

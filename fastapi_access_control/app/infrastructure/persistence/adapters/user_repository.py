@@ -1,13 +1,13 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from sqlalchemy import select
 from typing import Optional, List, Callable
-from ...ports.user_repository_port import UserRepositoryPort
-from ...domain.entities.user import User
-from ..persistence.user_model import UserModel
-from ..persistence.mappers.user_mapper import UserMapper
+from app.ports.user_repository_port import UserRepositoryPort
+from app.domain.entities.user import User
+from app.infrastructure.database.models.user import UserModel
+from app.infrastructure.persistence.adapters.mappers.user_mapper import UserMapper
 from sqlalchemy.exc import SQLAlchemyError
 import logging
-from ...domain.exceptions import RepositoryError
+from app.domain.exceptions import RepositoryError
 
 logger = logging.getLogger(__name__)
 

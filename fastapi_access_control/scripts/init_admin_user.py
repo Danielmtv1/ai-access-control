@@ -24,7 +24,7 @@ from app.config import get_settings
 from app.shared.database import AsyncSessionLocal
 from app.domain.entities.user import User, Role, UserStatus
 from app.domain.services.auth_service import AuthService
-from app.infrastructure.repositories.user_repository import SqlAlchemyUserRepository
+from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
 from app.application.use_cases.auth_use_cases import CreateUserUseCase
 from datetime import datetime, UTC
 
@@ -44,7 +44,7 @@ async def create_admin_user():
         
         # Admin user data
         admin_email = "admin@access-control.com"
-        admin_password = "AdminPassword123!"  # Change in production
+        admin_password = "AdminPassword123!"
         admin_name = "System Administrator"
         admin_roles = ["admin", "operator"]
         

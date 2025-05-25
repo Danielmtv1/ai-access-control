@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from datetime import datetime
 from app.domain.mqtt_message import MqttMessage
-from app.infrastructure.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
+from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 from app.domain.exceptions import RepositoryError
 
 # Fixture for AsyncSession mock

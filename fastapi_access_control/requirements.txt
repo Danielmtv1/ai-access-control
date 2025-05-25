@@ -1,5 +1,5 @@
 # Core Framework
-fastapi>=0.104.1
+fastapi>=0.104.0
 uvicorn>=0.24.0
 
 # Database & ORM
@@ -8,7 +8,7 @@ alembic>=1.12.1
 asyncpg>=0.29.0
 
 # Data Validation & Serialization
-pydantic>=2.5.2
+pydantic>=2.5.1
 pydantic-settings>=2.1.0
 email-validator>=2.1.0
 
@@ -38,8 +38,8 @@ google-cloud-aiplatform==1.38.1
 google-auth==2.23.4
 
 # Monitoring & Observability
-prometheus-client==0.19.0
-structlog==23.2.0
+prometheus-client>=0.19.0
+structlog>=23.2.0
 
 # Development & Testing
 pytest==7.4.3
@@ -78,3 +78,6 @@ orjson==3.9.10
 
 # Production
 gunicorn==21.2.0        
+
+# requirements.txt
+aiomqtt==2.0.0 

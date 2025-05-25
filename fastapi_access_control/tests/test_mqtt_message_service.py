@@ -1,7 +1,7 @@
 import pytest
-from app.domain.mqtt_message import MqttMessage
+from app.domain.entities.mqtt_message import MqttMessage
 from app.domain.services import MqttMessageService
-from app.infrastructure.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
+from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 
 @pytest.mark.asyncio
 async def test_save_mqtt_message(async_session):
