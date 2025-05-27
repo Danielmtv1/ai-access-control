@@ -1,4 +1,4 @@
-# AI Log Analyzer
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/Danielmtv1/ai-access-control?utm_source=oss&utm_medium=github&utm_campaign=Danielmtv1%2Fai-access-control&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
 ## 🎯 What does it do?
 
