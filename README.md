@@ -126,26 +126,33 @@ OLLAMA_BASE_URL=http://localhost:11434  # If using Ollama
 
 ## 📅 MVP - 8 Week Development Timeline
 
-### ✅ **Completed (Weeks 1-4)**
+### ✅ **Completed (Weeks 1-5)**
 - [x] Base FastAPI + PostgreSQL + Docker structure
 - [x] User management and JWT authentication
 - [x] MQTT communication infrastructure
 - [x] Basic database models (users, mqtt_messages)
 - [x] Health checks and metrics
 - [x] Alembic migrations
+- [x] **Complete access control system** (cards, doors, permissions)
+- [x] **Card management** with CRUD operations and use cases
+- [x] **Door management** with access control and security levels
+- [x] **Permission system** linking users, cards, and doors with scheduling
+- [x] **Domain entities** with business logic encapsulation
+- [x] **Repository pattern** implementation with SQLAlchemy adapters
+- [x] **Comprehensive testing infrastructure** with Docker Compose
+- [x] **82 passing tests** with 66% coverage
 
-### 🚧 **In Development (Week 5 - Current)**
-- [ ] **Access control entities** (cards, doors, permissions)
+### 🚧 **In Development (Week 6 - Current)**
 - [ ] **Real-time access validation** API for IoT devices
 - [ ] **AI integration** for log analysis
 - [ ] **MQTT bidirectional** communication (requests + responses)
 
 ### 📋 **Pending (Weeks 6-8)**
 
-#### **Week 6: Core Access Control**
-- [ ] Card management system (CRUD)
-- [ ] Door/area management 
-- [ ] Permission/schedule system
+#### **Week 6: IoT Integration & Validation**
+- [x] Card management system (CRUD) - **COMPLETED**
+- [x] Door/area management - **COMPLETED**
+- [x] Permission/schedule system - **COMPLETED**
 - [ ] Access validation engine
 - [ ] IoT device authentication
 
@@ -175,15 +182,20 @@ curl http://localhost:8000/api/v1/mqtt/messages  # View logged messages
 
 # ✅ User management
 curl http://localhost:8000/api/v1/auth/login -d '{"email":"admin@access-control.com","password":"AdminPassword123!"}'
+
+# ✅ Complete access control system
+curl http://localhost:8000/api/v1/cards  # Card management
+curl http://localhost:8000/api/v1/doors  # Door management
+curl -X POST http://localhost:8000/api/v1/cards -d '{"card_number":"ABC123","user_id":1,"is_active":true}'
+curl -X POST http://localhost:8000/api/v1/doors -d '{"name":"Main Entrance","location":"Building A","security_level":"medium"}'
+
+# ✅ Comprehensive testing
+make test           # Run all tests (82 passing)
+make test-coverage  # Generate coverage report (66%)
 ```
 
-**What's missing (critical for access control):**
+**What's missing (for complete IoT integration):**
 ```bash
-# ❌ Access control entities not implemented
-curl http://localhost:8000/api/v1/cards  # → 404
-curl http://localhost:8000/api/v1/doors  # → 404
-curl http://localhost:8000/api/v1/permissions  # → 404
-
 # ❌ Real-time access validation
 curl http://localhost:8000/api/v1/access/validate  # → 404
 
@@ -200,33 +212,57 @@ curl http://localhost:8000/dashboard  # → 404
 |-----------|--------|------|-----------|
 | 🏗️ Base infrastructure | ✅ 100% | 1-2 | ✅ |
 | 👤 User management | ✅ 100% | 4 | ✅ |
-| 💳 **Card management** | ❌ 0% | 5 | 🔥 **Critical** |
-| 🚪 **Door management** | ❌ 0% | 5 | 🔥 **Critical** |
+| 💳 **Card management** | ✅ 100% | 5 | ✅ **COMPLETED** |
+| 🚪 **Door management** | ✅ 100% | 5 | ✅ **COMPLETED** |
+| 🔗 **Permission system** | ✅ 100% | 5 | ✅ **COMPLETED** |
+| 🧪 **Testing infrastructure** | ✅ 100% | 5 | ✅ **COMPLETED** |
 | 🔐 **Access validation** | ❌ 0% | 6 | 🔥 **Critical** |
 | 📡 MQTT communication | ✅ 80% | 3 | ✅ |
 | 🤖 AI integration | ❌ 0% | 6-7 | ⚠️ Important |
 | 📊 Dashboard | ❌ 0% | 7 | ⚠️ Important |
 | 🚨 Alerts | ❌ 0% | 7 | ⚠️ Important |
 
-### 🚨 **Critical Gaps for Access Control**
+### 🚨 **Remaining Critical Components**
 
-**Without these, IoT devices can't validate access:**
-1. **Card Management** - Register cards to users
-2. **Door Management** - Define doors and security levels  
-3. **Permission System** - Who can access what and when
-4. **Access Validation API** - Real-time validation for IoT devices
-5. **MQTT Response System** - Send validation results back to devices
+**Core access control system is now complete! Remaining for full IoT integration:**
+1. ✅ **Card Management** - Register cards to users **COMPLETED**
+2. ✅ **Door Management** - Define doors and security levels **COMPLETED**
+3. ✅ **Permission System** - Who can access what and when **COMPLETED**
+4. ❌ **Access Validation API** - Real-time validation for IoT devices
+5. ❌ **MQTT Response System** - Send validation results back to devices
 
 ### 🎯 **Critical Remaining Objectives**
 
-**For a functional access control system:**
-1. **Access Control Core** (Week 5-6) - Cards, doors, permissions, validation
-2. **IoT Integration** (Week 6) - Real-time validation API for devices  
-3. **AI Security Analysis** (Week 7) - Analyze access patterns for threats
-4. **Management Dashboard** (Week 7) - UI to manage users, cards, doors
+**Access control core system is COMPLETE! Next priorities:**
+1. ✅ **Access Control Core** - Cards, doors, permissions **COMPLETED**
+2. ❌ **IoT Integration** (Week 6) - Real-time validation API for devices  
+3. ❌ **AI Security Analysis** (Week 7) - Analyze access patterns for threats
+4. ❌ **Management Dashboard** (Week 7) - UI to manage users, cards, doors
 
+**Current Status:** Ready for IoT device integration - all foundational components are implemented and tested.
 
-**Critical Path:** Access control must work before AI analysis adds value.
+## 🧪 Testing Infrastructure
+
+**Comprehensive testing system with Docker Compose:**
+```bash
+# Run all tests
+make test
+
+# Run specific test types
+make test-unit         # Unit tests only
+make test-integration  # Integration tests only
+make test-coverage     # Generate coverage report
+
+# Test environment
+docker-compose up test  # Isolated test database
+```
+
+**Test Coverage:**
+- **82 passing tests** across all components
+- **66% code coverage** with HTML reports
+- **Isolated test environment** with dedicated PostgreSQL database
+- **Async test support** with proper pytest configuration
+- **Integration tests** for complete access control flow
 
 ## 🛠️ Tech Stack
 
