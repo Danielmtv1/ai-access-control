@@ -14,7 +14,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
         user_repository = SqlAlchemyUserRepository(session_factory=AsyncSessionLocal)
         
         # Decode and validate token
-        user_id = auth_service.decode_token(token)
+        payload = auth_service.decode_token(token)
+        if not payload or payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        user_id = int(payload["sub"])
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -38,4 +46,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
-        ) 
+        )
+
+async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
+    """Get current active user"""
+    if not current_user.is_active():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Inactive user"
+        )
+    return current_user 

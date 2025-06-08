@@ -1,4 +1,5 @@
 import pytest
+import dataclasses
 from datetime import datetime
 from app.domain.entities.mqtt_message import MqttMessage
 

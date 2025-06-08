@@ -31,6 +31,8 @@ from app.infrastructure.observability.metrics import (
 # API imports
 from app.api.mqtt import router as mqtt_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.cards import router as cards_router
+from app.api.v1.doors import router as doors_router
 from app.api.health import router as health_router
 
 # Domain services
@@ -353,6 +355,8 @@ def setup_routers(app: FastAPI):
     # API v1 endpoints
     app.include_router(mqtt_router, prefix="/api/v1", tags=["MQTT"])
     app.include_router(auth_router, prefix="/api/v1", tags=["Authentication"])
+    app.include_router(cards_router, prefix="/api/v1", tags=["Cards"])
+    app.include_router(doors_router, prefix="/api/v1", tags=["Doors"])
     
     # Root endpoint
     @app.get("/")

@@ -6,14 +6,16 @@ from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta, time
 
-from app.infrastructure.database.base import Base
+from app.shared.database.base import Base
 from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 from app.domain.entities.user import User, Role, UserStatus
 from app.domain.services.auth_service import AuthService
 from app.domain.value_objects.auth import UserClaims
 from app.domain.entities.mqtt_message import MqttMessage
+from app.domain.entities.card import Card, CardType, CardStatus
+from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
 
 # Test Database
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/postgres_test"
@@ -153,6 +155,7 @@ async def mqtt_client_connected(mock_mqtt_client):
 @pytest.fixture
 def client():
     """FastAPI test client"""
+    from app.main import app
     return TestClient(app)
 
 # Utility functions for tests
@@ -248,4 +251,47 @@ def admin_user_claims():
         email="admin@example.com",
         full_name="Admin User",
         roles=["admin", "operator"]
+    )
+
+@pytest.fixture
+def sample_card():
+    """Sample card for testing"""
+    now = datetime.now(UTC)
+    return Card(
+        id=1,
+        card_id="CARD001",
+        user_id=1,
+        card_type=CardType.EMPLOYEE,
+        status=CardStatus.ACTIVE,
+        valid_from=now,
+        valid_until=now + timedelta(days=365),
+        created_at=now,
+        updated_at=now,
+        use_count=0
+    )
+
+@pytest.fixture
+def sample_door():
+    """Sample door for testing"""
+    now = datetime.now(UTC)
+    schedule = AccessSchedule(
+        days_of_week=[0, 1, 2, 3, 4],
+        start_time=time(9, 0),
+        end_time=time(18, 0)
+    )
+    return Door(
+        id=1,
+        name="Main Entrance",
+        location="Building A",
+        door_type=DoorType.ENTRANCE,
+        security_level=SecurityLevel.MEDIUM,
+        status=DoorStatus.ACTIVE,
+        created_at=now,
+        updated_at=now,
+        description="Main building entrance",
+        default_schedule=schedule,
+        requires_pin=False,
+        max_attempts=3,
+        lockout_duration=300,
+        failed_attempts=0
     )

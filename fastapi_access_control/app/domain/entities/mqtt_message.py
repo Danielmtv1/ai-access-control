@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional
 
 @dataclass(frozen=True)
@@ -25,6 +25,6 @@ class MqttMessage:
         return cls(
             topic=topic.strip(),
             message=message.strip(),
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC).replace(tzinfo=None),
             id=None
         ) 
