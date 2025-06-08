@@ -1,212 +1,247 @@
-# Access Control System
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/Danielmtv1/ai-access-control?utm_source=oss&utm_medium=github&utm_campaign=Danielmtv1%2Fai-access-control&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)
 
-A FastAPI-based access control system implementing hexagonal architecture and using MQTT for real-time communication.
+## 🎯 What does it do?
 
-## 🚀 Features
+**AI-powered Physical Access Control System** that:
+1. **Manages access permissions** (users, cards, doors, schedules)
+2. **Validates access requests** from IoT devices in real-time
+3. **Logs all access events** via MQTT
+4. **Analyzes access patterns** with AI to detect anomalies and security threats
 
-- 🔐 JWT Authentication with refresh tokens
-- 🔄 Hexagonal Architecture (ports & adapters)
-- 📡 Real-time MQTT communication
-- 📊 Prometheus metrics
-- 🏥 Health checks
-- 📝 OpenAPI documentation
-- 🔍 Structured logging
-- 🛡️ Robust security
+**Problem**: Manual access control + thousands of logs impossible to review
+**Solution**: Automated access validation + AI analysis for intelligent security insights
 
-## 🏗️ Architecture
+## 🤖 Supported AI Providers
 
-The system is built following hexagonal architecture principles:
+Configure your preferred one:
 
-```
-fastapi_access_control/
-├── app/
-│   ├── domain/           # Business logic and rules
-│   │   ├── entities/     # Domain entities
-│   │   ├── services/     # Domain services
-│   │   └── value_objects/# Value objects
-│   ├── application/      # Use cases
-│   ├── infrastructure/   # External adapters
-│   │   ├── persistence/  # Repositories
-│   │   ├── mqtt/        # MQTT client
-│   │   └── security/    # Security
-│   └── api/             # REST API
-│       ├── v1/          # v1 endpoints
-│       └── schemas/     # Pydantic schemas
-```
+- **OpenAI** (GPT-4, GPT-3.5)
+- **Google Gemini** (Pro, Flash)  
+- **Anthropic Claude** (Opus, Sonnet)
+- **Ollama** (Llama3, Mistral - local, free)
+- **Azure OpenAI**
+- **Cohere**
 
-## 🛠️ Requirements
+## 🚀 Setup (2 minutes)
 
-- Python 3.9+
-- PostgreSQL 13+
-- MQTT Broker (Mosquitto)
-- Docker and Docker Compose (optional)
-
-## 📦 Installation
-
-1. Clone the repository:
+### With OpenAI
 ```bash
-git clone https://github.com/your-username/ai-access-control.git
-cd ai-access-control
-```
+git clone <repo>
+cd ai-log-analyzer
 
-2. Create virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-.\venv\Scripts\activate  # Windows
-```
+# Configure
+echo "AI_PROVIDER=openai" > .env
+echo "OPENAI_API_KEY=sk-your_key" >> .env
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Configure environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configurations
-```
-
-5. Start with Docker Compose:
-```bash
+# Start
 docker-compose up -d
 ```
 
-## ⚙️ Configuration
-
-### Environment Variables
-
-```env
-# Database
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/postgres
-
-# MQTT
-MQTT_HOST=mqtt
-MQTT_PORT=1883
-MQTT_USERNAME=optional
-MQTT_PASSWORD=optional
-USE_TLS=false
-
-# JWT
-JWT_SECRET_KEY=your-secret-key
-SECRET_KEY=another-secret-key
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-REFRESH_TOKEN_EXPIRE_DAYS=7
-
-# General
-DEBUG=false
-```
-
-## 🚀 Usage
-
-### Start the Server
-
+### With Ollama (free)
 ```bash
-uvicorn app.main:app --reload
+# Install Ollama first
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama pull llama3
+
+# Configure
+echo "AI_PROVIDER=ollama" > .env
+echo "OLLAMA_MODEL=llama3" >> .env
+
+# Start
+docker-compose up -d
 ```
 
-### Main Endpoints
+## 📊 Complete System Flow
 
-- `POST /api/v1/auth/login` - User authentication
-- `POST /api/v1/auth/refresh` - Token refresh
-- `GET /api/v1/mqtt/messages` - Get MQTT messages
-- `GET /health` - Basic health check
-- `GET /health/detailed` - Detailed health check
-- `GET /metrics` - Prometheus metrics
-
-### API Documentation
-
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
-
-## 🔐 Authentication
-
-### Login
-
+### **Access Control Flow**
 ```bash
-curl -X POST "http://localhost:8000/api/v1/auth/login" \
-     -H "Content-Type: application/json" \
-     -d '{"email": "admin@access-control.com", "password": "AdminPassword123!"}'
+# 1. IoT device detects card
+Card "ABC123" → Door Reader → MQTT Request
+
+# 2. System validates access
+curl -X POST "http://localhost:8000/api/v1/access/validate" \
+  -d '{"card_id": "ABC123", "door_id": "main_entrance", "timestamp": "2024-01-15T09:00:00Z"}'
+
+# Response: {"access_granted": true, "user_name": "John Doe", "valid_until": "18:00"}
+
+# 3. IoT device receives response
+MQTT Response → Door Lock → Open/Deny
+
+# 4. Access event logged
+MQTT Log: {"card": "ABC123", "door": "main_entrance", "result": "granted", "user": "john.doe"}
+
+# 5. AI analyzes patterns
+AI Detection: "Unusual: John accessed server room at 3AM - investigate"
 ```
 
-### Use Token
-
+### **Data Management**
 ```bash
-curl -X GET "http://localhost:8000/api/v1/protected" \
-     -H "Authorization: Bearer <your-token>"
+# Manage users
+curl -X POST "http://localhost:8000/api/v1/users" \
+  -d '{"name": "John Doe", "email": "john@company.com", "department": "IT"}'
+
+# Manage access cards  
+curl -X POST "http://localhost:8000/api/v1/cards" \
+  -d '{"card_id": "ABC123", "user_id": 1, "card_type": "employee", "active": true}'
+
+# Manage doors/areas
+curl -X POST "http://localhost:8000/api/v1/doors" \
+  -d '{"name": "Server Room", "location": "Building A", "security_level": "high"}'
+
+# Set permissions
+curl -X POST "http://localhost:8000/api/v1/permissions" \
+  -d '{"user_id": 1, "door_id": 1, "access_schedule": "09:00-18:00", "days": ["mon","tue","wed","thu","fri"]}'
 ```
 
-## 📊 Monitoring
+## 🔧 Configuration
 
-### Prometheus Metrics
-
+**Main environment variables:**
 ```bash
-curl http://localhost:8000/metrics
+AI_PROVIDER=openai|google|anthropic|ollama
+AI_MODEL=gpt-4|gemini-pro|claude-3-opus|llama3
+OPENAI_API_KEY=sk-...     # If using OpenAI
+GOOGLE_AI_API_KEY=...     # If using Google
+OLLAMA_BASE_URL=http://localhost:11434  # If using Ollama
 ```
 
-### Health Check
+## 📋 What the AI Does
 
-```bash
-curl http://localhost:8000/health/detailed
+**Input:** Raw log
+```json
+{"user": "admin", "action": "login", "time": "03:00", "result": "success"}
 ```
 
-## 🧪 Testing
-
-```bash
-# Run tests
-pytest
-
-# With coverage
-pytest --cov=app tests/
-```
-
-## 📝 Logging
-
-Logs are automatically configured with the following format:
-
+**Output:** Automatic analysis
 ```json
 {
-    "timestamp": "2024-03-14T12:00:00Z",
-    "level": "INFO",
-    "message": "Log message",
-    "module": "app.api.v1.auth",
-    "function": "login",
-    "line": 42
+  "anomaly_detected": true,
+  "severity": "high",
+  "summary": "Admin login at 3AM outside business hours",
+  "recommendations": [
+    "Verify if it was scheduled maintenance",
+    "Review post-login activity"
+  ]
 }
 ```
 
-## 🔄 CI/CD
+## 📅 MVP - 8 Week Development Timeline
 
-The project includes GitHub Actions configuration:
+### ✅ **Completed (Weeks 1-4)**
+- [x] Base FastAPI + PostgreSQL + Docker structure
+- [x] User management and JWT authentication
+- [x] MQTT communication infrastructure
+- [x] Basic database models (users, mqtt_messages)
+- [x] Health checks and metrics
+- [x] Alembic migrations
 
-- Automated tests
-- Linting
-- Type checking
-- Docker build
-- Deployment (configurable)
+### 🚧 **In Development (Week 5 - Current)**
+- [ ] **Access control entities** (cards, doors, permissions)
+- [ ] **Real-time access validation** API for IoT devices
+- [ ] **AI integration** for log analysis
+- [ ] **MQTT bidirectional** communication (requests + responses)
 
-## 🤝 Contributing
+### 📋 **Pending (Weeks 6-8)**
 
-1. Fork the project
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
+#### **Week 6: Core Access Control**
+- [ ] Card management system (CRUD)
+- [ ] Door/area management 
+- [ ] Permission/schedule system
+- [ ] Access validation engine
+- [ ] IoT device authentication
 
-## 📄 License
+#### **Week 7: AI Analysis & Dashboard**
+- [ ] AI analysis of access patterns
+- [ ] Anomaly detection (unusual access times, failed attempts)
+- [ ] Web dashboard for access management
+- [ ] Real-time alerts for security events
 
-This project is under the MIT License - see the [LICENSE](LICENSE) file for details.
+#### **Week 8: Integration & Deploy**
+- [ ] Complete IoT device integration
+- [ ] Access control + AI working together
+- [ ] Performance optimization
+- [ ] Production deployment
 
-## 👥 Authors
+### 🎯 **Current Code Status**
 
-- Your Name - [@your-username](https://github.com/your-username)
+**What works:**
+```bash
+# ✅ Basic APIs and auth
+curl http://localhost:8000/health
+curl -H "Authorization: Bearer <token>" http://localhost:8000/api/v1/auth/me
 
-## 🙏 Acknowledgments
+# ✅ MQTT message logging  
+mosquitto_pub -h localhost -t "access/door1/events" -m '{"card":"ABC123","result":"granted"}'
+curl http://localhost:8000/api/v1/mqtt/messages  # View logged messages
 
-- FastAPI
-- SQLAlchemy
-- Pydantic
-- aiomqtt
-- Prometheus 
+# ✅ User management
+curl http://localhost:8000/api/v1/auth/login -d '{"email":"admin@access-control.com","password":"AdminPassword123!"}'
+```
+
+**What's missing (critical for access control):**
+```bash
+# ❌ Access control entities not implemented
+curl http://localhost:8000/api/v1/cards  # → 404
+curl http://localhost:8000/api/v1/doors  # → 404
+curl http://localhost:8000/api/v1/permissions  # → 404
+
+# ❌ Real-time access validation
+curl http://localhost:8000/api/v1/access/validate  # → 404
+
+# ❌ AI analysis  
+curl http://localhost:8000/api/v1/ai/analyze  # → 404
+
+# ❌ Dashboard
+curl http://localhost:8000/dashboard  # → 404
+```
+
+### 📊 **MVP Progress**
+
+| Component | Status | Week | Critical? |
+|-----------|--------|------|-----------|
+| 🏗️ Base infrastructure | ✅ 100% | 1-2 | ✅ |
+| 👤 User management | ✅ 100% | 4 | ✅ |
+| 💳 **Card management** | ❌ 0% | 5 | 🔥 **Critical** |
+| 🚪 **Door management** | ❌ 0% | 5 | 🔥 **Critical** |
+| 🔐 **Access validation** | ❌ 0% | 6 | 🔥 **Critical** |
+| 📡 MQTT communication | ✅ 80% | 3 | ✅ |
+| 🤖 AI integration | ❌ 0% | 6-7 | ⚠️ Important |
+| 📊 Dashboard | ❌ 0% | 7 | ⚠️ Important |
+| 🚨 Alerts | ❌ 0% | 7 | ⚠️ Important |
+
+### 🚨 **Critical Gaps for Access Control**
+
+**Without these, IoT devices can't validate access:**
+1. **Card Management** - Register cards to users
+2. **Door Management** - Define doors and security levels  
+3. **Permission System** - Who can access what and when
+4. **Access Validation API** - Real-time validation for IoT devices
+5. **MQTT Response System** - Send validation results back to devices
+
+### 🎯 **Critical Remaining Objectives**
+
+**For a functional access control system:**
+1. **Access Control Core** (Week 5-6) - Cards, doors, permissions, validation
+2. **IoT Integration** (Week 6) - Real-time validation API for devices  
+3. **AI Security Analysis** (Week 7) - Analyze access patterns for threats
+4. **Management Dashboard** (Week 7) - UI to manage users, cards, doors
+
+
+**Critical Path:** Access control must work before AI analysis adds value.
+
+## 🛠️ Tech Stack
+
+- **Backend**: FastAPI + Python 3.12
+- **Database**: PostgreSQL
+- **Messaging**: MQTT (Mosquitto)
+- **AI**: Configurable (OpenAI/Google/Anthropic/Ollama)
+- **Deploy**: Docker Compose
+
+## 🔗 Useful Links
+
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
+- **Metrics**: http://localhost:8000/metrics
+
+---
+
+**Turn log chaos into actionable insights with the power of AI.**

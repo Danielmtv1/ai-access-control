@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func, ARRAY
+from sqlalchemy.orm import relationship
 from app.shared.database.base import Base
 
 class UserModel(Base):
@@ -14,6 +15,10 @@ class UserModel(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+    
+    # Relationships
+    cards = relationship("CardModel", back_populates="user")
+    permissions = relationship("PermissionModel", foreign_keys="PermissionModel.user_id", back_populates="user")
     
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', roles={self.roles})>" 
