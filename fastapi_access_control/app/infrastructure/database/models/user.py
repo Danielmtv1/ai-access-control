@@ -1,13 +1,15 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, func, ARRAY
+from sqlalchemy import Column, String, Boolean, DateTime, func, ARRAY
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 from app.shared.database.base import Base
+import uuid
 
 class UserModel(Base):
     """Database model for users"""
     
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     full_name = Column(String, nullable=False)

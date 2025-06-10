@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import List
+from uuid import UUID
 import re
 
 class Email(BaseModel):
@@ -49,7 +50,7 @@ class Password(BaseModel):
 
 class UserClaims(BaseModel):
     """Value object for user claims in JWT tokens"""
-    user_id: int
+    user_id: UUID
     email: str
     full_name: str
     roles: List[str]
