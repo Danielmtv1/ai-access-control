@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 class UserStatus(Enum):
     ACTIVE = "active"
@@ -17,7 +18,7 @@ class Role(Enum):
 @dataclass
 class User:
     """Domain entity for User - Clean domain logic"""
-    id: int
+    id: UUID
     email: str
     hashed_password: str
     full_name: str

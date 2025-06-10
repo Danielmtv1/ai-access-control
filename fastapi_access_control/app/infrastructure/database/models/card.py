@@ -1,15 +1,17 @@
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, func, ForeignKey, Text
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
 from app.shared.database.base import Base
+import uuid
 
 class CardModel(Base):
     """Database model for access cards"""
     
     __tablename__ = "cards"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     card_id = Column(String, unique=True, index=True, nullable=False)  # Physical card identifier
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     card_type = Column(String, nullable=False)  # employee, visitor, contractor, master, temporary
     status = Column(String, nullable=False, default="active")  # active, inactive, suspended, lost, expired
     valid_from = Column(DateTime, nullable=False)

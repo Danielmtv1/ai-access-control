@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from typing import List
+from uuid import UUID
 from app.domain.entities.card import Card
 from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
 from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
@@ -70,7 +71,13 @@ def get_user_repository():
             }
         },
         400: {
-            "description": "Bad Request - Card ID already exists or user not found"
+            "description": "Bad Request - Invalid input data"
+        },
+        404: {
+            "description": "Not Found - User not found"
+        },
+        409: {
+            "description": "Conflict - Card ID already exists"
         }
     }
 )
@@ -110,7 +117,7 @@ async def create_card(
     }
 )
 async def get_card(
-    card_id: int,
+    card_id: UUID,
     card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
@@ -153,7 +160,7 @@ async def get_card_by_card_id(
     description="Retrieve all cards for a specific user",
 )
 async def get_user_cards(
-    user_id: int,
+    user_id: UUID,
     card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
@@ -203,7 +210,7 @@ async def list_cards(
     description="Update card information"
 )
 async def update_card(
-    card_id: int,
+    card_id: UUID,
     card_data: UpdateCardRequest = Body(..., description="Card update data"),
     card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
@@ -234,7 +241,7 @@ async def update_card(
     description="Deactivate a card to prevent access"
 )
 async def deactivate_card(
-    card_id: int,
+    card_id: UUID,
     card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
@@ -259,7 +266,7 @@ async def deactivate_card(
     description="Suspend a card temporarily"
 )
 async def suspend_card(
-    card_id: int,
+    card_id: UUID,
     card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
@@ -284,7 +291,7 @@ async def suspend_card(
     description="Delete a card permanently"
 )
 async def delete_card(
-    card_id: int,
+    card_id: UUID,
     card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):

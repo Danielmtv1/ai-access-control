@@ -1,5 +1,6 @@
 from typing import Optional, List
 from datetime import datetime, UTC
+from uuid import UUID
 from ...domain.entities.card import Card, CardType, CardStatus
 from ...ports.card_repository_port import CardRepositoryPort
 from ...ports.user_repository_port import UserRepositoryPort
@@ -23,7 +24,7 @@ class CreateCardUseCase:
     
     async def execute(self, 
                      card_id: str,
-                     user_id: int,
+                     user_id: UUID,
                      card_type: str,
                      valid_from: datetime,
                      valid_until: Optional[datetime] = None) -> Card:
@@ -42,7 +43,7 @@ class CreateCardUseCase:
         # Create card entity
         now = datetime.now(UTC).replace(tzinfo=None)
         card = Card(
-            id=0,  # Will be set by database
+            id=None,  # Will be set by database
             card_id=card_id,
             user_id=user_id,
             card_type=CardType(card_type),
@@ -63,7 +64,7 @@ class GetCardUseCase:
     def __init__(self, card_repository: CardRepositoryPort):
         self.card_repository = card_repository
     
-    async def execute(self, card_id: int) -> Card:
+    async def execute(self, card_id: UUID) -> Card:
         """Get card by ID"""
         card = await self.card_repository.get_by_id(card_id)
         if not card:
@@ -89,7 +90,7 @@ class GetUserCardsUseCase:
     def __init__(self, card_repository: CardRepositoryPort):
         self.card_repository = card_repository
     
-    async def execute(self, user_id: int) -> List[Card]:
+    async def execute(self, user_id: UUID) -> List[Card]:
         """Get all cards for a user"""
         return await self.card_repository.get_by_user_id(user_id)
 
@@ -100,7 +101,7 @@ class UpdateCardUseCase:
         self.card_repository = card_repository
     
     async def execute(self, 
-                     card_id: int,
+                     card_id: UUID,
                      card_type: Optional[str] = None,
                      status: Optional[str] = None,
                      valid_until: Optional[datetime] = None) -> Card:
@@ -130,7 +131,7 @@ class DeactivateCardUseCase:
     def __init__(self, card_repository: CardRepositoryPort):
         self.card_repository = card_repository
     
-    async def execute(self, card_id: int) -> Card:
+    async def execute(self, card_id: UUID) -> Card:
         """Deactivate card"""
         
         # Get existing card
@@ -151,7 +152,7 @@ class SuspendCardUseCase:
     def __init__(self, card_repository: CardRepositoryPort):
         self.card_repository = card_repository
     
-    async def execute(self, card_id: int) -> Card:
+    async def execute(self, card_id: UUID) -> Card:
         """Suspend card"""
         
         # Get existing card
@@ -181,7 +182,7 @@ class DeleteCardUseCase:
     def __init__(self, card_repository: CardRepositoryPort):
         self.card_repository = card_repository
     
-    async def execute(self, card_id: int) -> bool:
+    async def execute(self, card_id: UUID) -> bool:
         """Delete card"""
         
         # Check if card exists

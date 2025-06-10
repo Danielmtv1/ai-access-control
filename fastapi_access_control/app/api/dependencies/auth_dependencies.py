@@ -4,8 +4,9 @@ from app.domain.entities.user import User
 from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
 from app.domain.services.auth_service import AuthService
 from app.shared.database import AsyncSessionLocal
+from uuid import UUID
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
 async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     """Get current authenticated user from JWT token"""
@@ -22,7 +23,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
-        user_id = int(payload["sub"])
+        user_id = UUID(payload["sub"])
         if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

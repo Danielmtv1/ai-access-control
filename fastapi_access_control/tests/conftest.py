@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
 from datetime import datetime, UTC, timedelta, time
+from uuid import UUID, uuid4
 
 from app.shared.database.base import Base
 from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
@@ -16,6 +17,12 @@ from app.domain.value_objects.auth import UserClaims
 from app.domain.entities.mqtt_message import MqttMessage
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
+
+# Test UUIDs for consistent testing
+SAMPLE_USER_UUID = UUID("12345678-1234-5678-9012-123456789012")
+SAMPLE_ADMIN_UUID = UUID("87654321-4321-8765-2109-876543210987")  
+SAMPLE_CARD_UUID = UUID("11111111-2222-3333-4444-555555555555")
+SAMPLE_DOOR_UUID = UUID("66666666-7777-8888-9999-000000000000")
 
 # Test Database
 TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/postgres_test"
@@ -196,26 +203,28 @@ def sample_device_command():
 def sample_user():
     """Sample user for testing"""
     return User(
-        id=1,
+        id=SAMPLE_USER_UUID,
         email="test@example.com",
         hashed_password="$2b$12$test.hash.here",
         full_name="Test User",
         roles=[Role.USER],
         status=UserStatus.ACTIVE,
-        created_at=datetime.now(UTC)
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
 
 @pytest.fixture
 def sample_admin_user():
     """Sample admin user for testing"""
     return User(
-        id=2,
+        id=SAMPLE_ADMIN_UUID,
         email="admin@example.com",
         hashed_password="$2b$12$admin.hash.here",
         full_name="Admin User",
         roles=[Role.ADMIN, Role.OPERATOR],
         status=UserStatus.ACTIVE,
-        created_at=datetime.now(UTC)
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC)
     )
 
 @pytest.fixture
@@ -237,7 +246,7 @@ def valid_jwt_token(auth_service, sample_user):
 def valid_user_claims():
     """Valid user claims for testing"""
     return UserClaims(
-        user_id=1,
+        user_id=SAMPLE_USER_UUID,
         email="test@example.com",
         full_name="Test User",
         roles=["user"]
@@ -247,7 +256,7 @@ def valid_user_claims():
 def admin_user_claims():
     """Admin user claims for testing"""
     return UserClaims(
-        user_id=2,
+        user_id=SAMPLE_ADMIN_UUID,
         email="admin@example.com",
         full_name="Admin User",
         roles=["admin", "operator"]
@@ -258,9 +267,9 @@ def sample_card():
     """Sample card for testing"""
     now = datetime.now(UTC)
     return Card(
-        id=1,
+        id=SAMPLE_CARD_UUID,
         card_id="CARD001",
-        user_id=1,
+        user_id=SAMPLE_USER_UUID,
         card_type=CardType.EMPLOYEE,
         status=CardStatus.ACTIVE,
         valid_from=now,
@@ -280,7 +289,7 @@ def sample_door():
         end_time=time(18, 0)
     )
     return Door(
-        id=1,
+        id=SAMPLE_DOOR_UUID,
         name="Main Entrance",
         location="Building A",
         door_type=DoorType.ENTRANCE,

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Form
+from fastapi.security import OAuth2PasswordRequestForm
 from app.domain.entities.user import User
 from app.domain.services.auth_service import AuthService
 from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
@@ -200,4 +201,106 @@ async def refresh_token(
         raise map_domain_error_to_http(e)
     except Exception as e:
         logger.error(f"Refresh token error: {str(e)}")
-        raise map_domain_error_to_http(e) 
+        raise map_domain_error_to_http(e)
+
+@router.post(
+    "/token",
+    response_model=TokenResponse,
+    summary="OAuth2 Token Endpoint",
+    description="""
+    OAuth2 compatible token endpoint for Swagger UI authentication.
+    
+    This endpoint accepts form data and is compatible with the OAuth2 password flow.
+    It provides the same functionality as the /login endpoint but with form-based input
+    that works with the "Authorize" button in Swagger UI.
+    
+    **Form Parameters:**
+    - username: User's email address
+    - password: User's password
+    - grant_type: Must be "password" (automatically handled)
+    """,
+    responses={
+        200: {
+            "description": "Successful authentication",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                        "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                        "token_type": "bearer",
+                        "expires_in": 1800
+                    }
+                }
+            }
+        },
+        401: {
+            "description": "Invalid credentials",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "detail": "Invalid email or password"
+                    }
+                }
+            }
+        }
+    }
+)
+async def token(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    auth_service: AuthService = Depends(get_auth_service),
+    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository)
+):
+    """
+    OAuth2 compatible token endpoint for authentication.
+    
+    This endpoint accepts form data and provides the same authentication
+    functionality as the /login endpoint, but in a format compatible
+    with OAuth2 and Swagger UI.
+    
+    Args:
+        form_data: OAuth2 form data with username (email) and password
+        auth_service: Authentication service instance
+        user_repository: User repository instance
+    
+    Returns:
+        TokenResponse: JWT tokens for authentication
+        
+    Raises:
+        HTTPException: If credentials are invalid or user is inactive
+    """
+    try:
+        # Use username field as email (OAuth2 standard)
+        email = form_data.username
+        password = form_data.password
+        
+        logger.info(f"Token endpoint login attempt for email: {email}")
+        
+        authenticate_use_case = AuthenticateUserUseCase(
+            auth_service=auth_service,
+            user_repository=user_repository
+        )
+        
+        tokens = await authenticate_use_case.execute(email, password)
+        
+        logger.info(f"Successful token endpoint login for email: {email}")
+        return TokenResponse.from_token_pair(tokens)
+        
+    except ValueError as e:
+        logger.error(f"Validation error for email {form_data.username}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
+    except InvalidCredentialsError as e:
+        logger.error(f"Invalid credentials for email {form_data.username}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except Exception as e:
+        logger.error(f"Token endpoint error for email {form_data.username}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Authentication service temporarily unavailable"
+        ) 

@@ -2,6 +2,7 @@ import bcrypt
 import jwt
 from datetime import datetime, timedelta
 from typing import Optional
+from uuid import UUID
 from ..entities.user import User, Role
 from ..value_objects.auth import UserClaims, TokenPair
 from ...config import get_settings
@@ -93,7 +94,7 @@ class AuthService:
         
         try:
             return UserClaims(
-                user_id=int(payload["sub"]),
+                user_id=UUID(payload["sub"]),
                 email=payload["email"],
                 full_name=payload["full_name"],
                 roles=payload["roles"]
