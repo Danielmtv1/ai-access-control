@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 class CardTypeEnum(str, Enum):
     EMPLOYEE = "employee"
@@ -26,11 +27,10 @@ class CreateCardRequest(BaseModel):
         description="Physical card identifier (RFID, NFC, etc.)",
         example="CARD001234"
     )
-    user_id: int = Field(
+    user_id: UUID = Field(
         ...,
-        gt=0,
-        description="ID of the user this card belongs to",
-        example=1
+        description="UUID of the user this card belongs to",
+        example="f190a1ef-8ddd-47c5-ae99-04c574601e31"
     )
     card_type: CardTypeEnum = Field(
         ...,
@@ -58,7 +58,7 @@ class CreateCardRequest(BaseModel):
         schema_extra = {
             "example": {
                 "card_id": "CARD001234",
-                "user_id": 1,
+                "user_id": "f190a1ef-8ddd-47c5-ae99-04c574601e31",
                 "card_type": "employee",
                 "valid_from": "2024-01-01T00:00:00",
                 "valid_until": "2024-12-31T23:59:59"
@@ -91,9 +91,9 @@ class UpdateCardRequest(BaseModel):
 
 class CardResponse(BaseModel):
     """Response model for card data"""
-    id: int = Field(..., description="Card database ID", example=1)
+    id: UUID = Field(..., description="Card database UUID", example="a1b2c3d4-e5f6-7890-abcd-ef1234567890")
     card_id: str = Field(..., description="Physical card identifier", example="CARD001234")
-    user_id: int = Field(..., description="ID of the user this card belongs to", example=1)
+    user_id: UUID = Field(..., description="UUID of the user this card belongs to", example="f190a1ef-8ddd-47c5-ae99-04c574601e31")
     card_type: CardTypeEnum = Field(..., description="Type of card", example=CardTypeEnum.EMPLOYEE)
     status: CardStatusEnum = Field(..., description="Status of the card", example=CardStatusEnum.ACTIVE)
     valid_from: datetime = Field(..., description="Date when card becomes valid", example="2024-01-01T00:00:00")
@@ -124,9 +124,9 @@ class CardResponse(BaseModel):
         from_attributes = True
         schema_extra = {
             "example": {
-                "id": 1,
+                "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "card_id": "CARD001234",
-                "user_id": 1,
+                "user_id": "f190a1ef-8ddd-47c5-ae99-04c574601e31",
                 "card_type": "employee",
                 "status": "active",
                 "valid_from": "2024-01-01T00:00:00",
@@ -150,9 +150,9 @@ class CardListResponse(BaseModel):
             "example": {
                 "cards": [
                     {
-                        "id": 1,
+                        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                         "card_id": "CARD001234",
-                        "user_id": 1,
+                        "user_id": "f190a1ef-8ddd-47c5-ae99-04c574601e31",
                         "card_type": "employee",
                         "status": "active",
                         "valid_from": "2024-01-01T00:00:00",

@@ -5,6 +5,7 @@ from ...domain.value_objects.auth import TokenPair, UserClaims
 from ...ports.user_repository_port import UserRepositoryPort
 from ...domain.exceptions import DomainError
 from datetime import datetime, UTC
+from uuid import UUID
 import logging
 
 # Configurar logging
@@ -69,7 +70,7 @@ class RefreshTokenUseCase:
             raise AuthenticationError("Invalid refresh token")
         
         # Get user
-        user_id = int(payload["sub"])
+        user_id = UUID(payload["sub"])
         user = await self.user_repository.get_by_id(user_id)
         
         if not user or not user.is_active():
@@ -110,7 +111,7 @@ class CreateUserUseCase:
         # Create user entity
         now = datetime.now(UTC).replace(tzinfo=None)
         user = User(
-            id=0,  # Will be set by database
+            id=None,  # Will be set by database
             email=email,
             hashed_password=hashed_password,
             full_name=full_name,

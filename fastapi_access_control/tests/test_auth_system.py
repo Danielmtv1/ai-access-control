@@ -3,6 +3,7 @@ import asyncio
 from datetime import datetime, UTC
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 from app.main import app
 from app.domain.entities.user import User, Role, UserStatus
@@ -51,14 +52,16 @@ class TestAuthService:
     def test_generate_access_token(self):
         """Test JWT access token generation"""
         auth_service = AuthService()
+        user_id = uuid4()
         user = User(
-            id=1,
+            id=user_id,
             email="test@example.com",
             hashed_password="hashed",
             full_name="Test User",
             roles=[Role.USER],
             status=UserStatus.ACTIVE,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         token = auth_service.generate_access_token(user)
@@ -69,21 +72,23 @@ class TestAuthService:
         # Verify token can be decoded
         payload = auth_service.decode_token(token)
         assert payload is not None
-        assert payload["sub"] == "1"
+        assert payload["sub"] == str(user_id)
         assert payload["email"] == "test@example.com"
         assert payload["type"] == "access"
     
     def test_generate_token_pair(self):
         """Test token pair generation"""
         auth_service = AuthService()
+        user_id = uuid4()
         user = User(
-            id=1,
+            id=user_id,
             email="test@example.com",
             hashed_password="hashed",
             full_name="Test User",
             roles=[Role.USER],
             status=UserStatus.ACTIVE,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         token_pair = auth_service.generate_token_pair(user)
@@ -97,21 +102,23 @@ class TestAuthService:
     def test_extract_user_claims(self):
         """Test extracting user claims from token"""
         auth_service = AuthService()
+        user_id = uuid4()
         user = User(
-            id=1,
+            id=user_id,
             email="test@example.com",
             hashed_password="hashed",
             full_name="Test User",
             roles=[Role.USER, Role.VIEWER],
             status=UserStatus.ACTIVE,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         token = auth_service.generate_access_token(user)
         claims = auth_service.extract_user_claims(token)
         
         assert isinstance(claims, UserClaims)
-        assert claims.user_id == 1
+        assert claims.user_id == user_id
         assert claims.email == "test@example.com"
         assert claims.full_name == "Test User"
         assert "user" in claims.roles
@@ -131,14 +138,16 @@ class TestAuthUseCases:
         password = "TestPassword123!"
         hashed_password = auth_service.hash_password(password)
         
+        user_id = uuid4()
         user = User(
-            id=1,
+            id=user_id,
             email="test@example.com",
             hashed_password=hashed_password,
             full_name="Test User",
             roles=[Role.USER],
             status=UserStatus.ACTIVE,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         mock_repo.get_by_email.return_value = user
@@ -182,14 +191,16 @@ class TestAuthUseCases:
         wrong_password = "WrongPassword456!"
         hashed_password = auth_service.hash_password(correct_password)
         
+        user_id = uuid4()
         user = User(
-            id=1,
+            id=user_id,
             email="test@example.com",
             hashed_password=hashed_password,
             full_name="Test User",
             roles=[Role.USER],
             status=UserStatus.ACTIVE,
-            created_at=datetime.now(UTC)
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
         )
         
         mock_repo.get_by_email.return_value = user

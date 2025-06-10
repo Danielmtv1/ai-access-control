@@ -6,6 +6,8 @@ from app.domain.errors.auth_errors import (
     UserInactiveError,
     InsufficientPermissionsError
 )
+from app.domain.exceptions import DomainError
+from app.application.use_cases.card_use_cases import CardNotFoundError
 
 def map_domain_error_to_http(error: Exception) -> HTTPException:
     """Map domain errors to HTTP exceptions"""
@@ -40,6 +42,35 @@ def map_domain_error_to_http(error: Exception) -> HTTPException:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=error.message
         )
+    
+    # Handle card-specific errors
+    if isinstance(error, CardNotFoundError):
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(error)
+        )
+    
+    # Handle general domain errors
+    if isinstance(error, DomainError):
+        # Check if it's a "not found" error
+        error_message = str(error)
+        if "not found" in error_message.lower():
+            return HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=error_message
+            )
+        # Check if it's a "already exists" error
+        elif "already exists" in error_message.lower():
+            return HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=error_message
+            )
+        # Other domain errors as bad request
+        else:
+            return HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=error_message
+            )
     
     # Default error
     return HTTPException(

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
 from enum import Enum
+from uuid import UUID
 
 class CardType(Enum):
     EMPLOYEE = "employee"
@@ -20,9 +21,9 @@ class CardStatus(Enum):
 @dataclass
 class Card:
     """Domain entity for Card - Clean domain logic"""
-    id: int
+    id: UUID
     card_id: str  # Physical card identifier (RFID, NFC, etc.)
-    user_id: int
+    user_id: UUID
     card_type: CardType
     status: CardStatus
     valid_from: datetime
