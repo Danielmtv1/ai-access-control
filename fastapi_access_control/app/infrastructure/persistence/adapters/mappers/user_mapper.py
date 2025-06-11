@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.domain.entities.user import User, Role, UserStatus
 from app.infrastructure.database.models.user import UserModel
 
@@ -44,5 +44,5 @@ class UserMapper:
         model.full_name = user.full_name
         model.roles = [role.value for role in user.roles]
         model.is_active = user.status == UserStatus.ACTIVE
-        model.updated_at = datetime.utcnow()
+        model.updated_at = datetime.now(timezone.utc)
         return model 

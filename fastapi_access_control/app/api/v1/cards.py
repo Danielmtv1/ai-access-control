@@ -55,9 +55,9 @@ def get_user_repository():
             "content": {
                 "application/json": {
                     "example": {
-                        "id": 1,
+                        "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
                         "card_id": "CARD001234",
-                        "user_id": 1,
+                        "user_id": "f47ac10b-58cc-4372-a567-0e02b2c3d478",
                         "card_type": "employee",
                         "status": "active",
                         "valid_from": "2024-01-01T00:00:00",
@@ -125,7 +125,7 @@ async def get_card(
     try:
         get_card_use_case = GetCardUseCase(card_repository)
         card = await get_card_use_case.execute(card_id)
-        return CardResponse.from_attributes(card)
+        return CardResponse.model_validate(card, from_attributes=True) 
     except Exception as e:
         logger.error(f"Error getting card {card_id}: {str(e)}")
         raise map_domain_error_to_http(e)
@@ -148,7 +148,7 @@ async def get_card_by_card_id(
     try:
         get_card_use_case = GetCardByCardIdUseCase(card_repository)
         card = await get_card_use_case.execute(card_id)
-        return CardResponse.from_attributes(card)
+        return CardResponse.model_validate(card, from_attributes=True)
     except Exception as e:
         logger.error(f"Error getting card by card_id {card_id}: {str(e)}")
         raise map_domain_error_to_http(e)
@@ -168,7 +168,7 @@ async def get_user_cards(
     try:
         get_user_cards_use_case = GetUserCardsUseCase(card_repository)
         cards = await get_user_cards_use_case.execute(user_id)
-        return [CardResponse.from_attributes(card) for card in cards]
+        return [CardResponse.model_validate(card, from_attributes=True) for card in cards]
     except Exception as e:
         logger.error(f"Error getting cards for user {user_id}: {str(e)}")
         raise map_domain_error_to_http(e)
@@ -194,7 +194,7 @@ async def list_cards(
         total = len(cards) + skip  # This is a simplified approach
         
         return CardListResponse(
-            cards=[CardResponse.from_attributes(card) for card in cards],
+            cards=[CardResponse.model_validate(card, from_attributes=True) for card in cards],
             total=total,
             skip=skip,
             limit=limit
@@ -228,7 +228,7 @@ async def update_card(
         )
         
         logger.info(f"Card {card_id} updated successfully")
-        return CardResponse.from_attributes(card)
+        return CardResponse.model_validate(card, from_attributes=True)
         
     except Exception as e:
         logger.error(f"Error updating card {card_id}: {str(e)}")
@@ -253,7 +253,7 @@ async def deactivate_card(
         card = await deactivate_card_use_case.execute(card_id)
         
         logger.info(f"Card {card_id} deactivated successfully")
-        return CardResponse.from_attributes(card)
+        return CardResponse.model_validate(card, from_attributes=True)
         
     except Exception as e:
         logger.error(f"Error deactivating card {card_id}: {str(e)}")
@@ -278,7 +278,7 @@ async def suspend_card(
         card = await suspend_card_use_case.execute(card_id)
         
         logger.info(f"Card {card_id} suspended successfully")
-        return CardResponse.from_attributes(card)
+        return CardResponse.model_validate(card, from_attributes=True)
         
     except Exception as e:
         logger.error(f"Error suspending card {card_id}: {str(e)}")

@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone, timezone
 from enum import Enum
 from uuid import UUID
+
 
 class CardType(Enum):
     EMPLOYEE = "employee"
@@ -32,6 +33,9 @@ class Card:
     updated_at: datetime
     use_count: int
     last_used: Optional[datetime] = None
+    def _now() -> datetime:
+        """Get current time as timezone-naive datetime"""
+        return datetime.now(timezone.utc).replace(tzinfo=None)
     
     def is_active(self) -> bool:
         """Business logic: Card can be used for access"""

@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
-from datetime import datetime, UTC, timedelta, time
+from datetime import datetime, timezone, UTC, timedelta, time
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
 from app.domain.entities.user import User, Role, UserStatus

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.infrastructure.database.models.card import CardModel
 
@@ -53,5 +53,5 @@ class CardMapper:
         model.valid_until = card.valid_until
         model.last_used = card.last_used
         model.use_count = card.use_count
-        model.updated_at = datetime.utcnow()
+        model.updated_at = datetime.now(timezone.utc)
         return model

@@ -3,7 +3,7 @@ Tests for MQTT message service
 """
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 
 from app.domain.entities.mqtt_message import MqttMessage
 from app.domain.services.mqtt_message_service import MqttMessageService

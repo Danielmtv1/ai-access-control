@@ -3,13 +3,14 @@
 ## 🎯 What does it do?
 
 **AI-powered Physical Access Control System** that:
-1. **Manages access permissions** (users, cards, doors, schedules)
-2. **Validates access requests** from IoT devices in real-time
-3. **Logs all access events** via MQTT
-4. **Analyzes access patterns** with AI to detect anomalies and security threats
+1. **Manages access permissions** (users, cards, doors, schedules) ✅ **COMPLETED**
+2. **Validates access requests** from IoT devices in real-time ✅ **COMPLETED**
+3. **Communicates bidirectionally** with IoT devices via MQTT ✅ **COMPLETED**
+4. **Logs all access events** via MQTT for comprehensive audit trails ✅ **COMPLETED**
+5. **Analyzes access patterns** with AI to detect anomalies and security threats ⚠️ **IN PROGRESS**
 
 **Problem**: Manual access control + thousands of logs impossible to review
-**Solution**: Automated access validation + AI analysis for intelligent security insights
+**Solution**: Automated access validation + AI analysis + IoT device integration for intelligent security insights
 
 ## 🤖 Supported AI Providers
 
@@ -90,7 +91,7 @@ curl -X POST "http://localhost:8000/api/v1/doors" \
 
 # Set permissions
 curl -X POST "http://localhost:8000/api/v1/permissions" \
-  -d '{"user_id": 1, "door_id": 1, "access_schedule": "09:00-18:00", "days": ["mon","tue","wed","thu","fri"]}'
+  -d '{"user_id": 1, "door_id": TEST_DOOR_ID, "access_schedule": "09:00-18:00", "days": ["mon","tue","wed","thu","fri"]}'
 ```
 
 ## 🔧 Configuration

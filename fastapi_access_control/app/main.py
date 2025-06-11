@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 from fastapi import FastAPI, Request
@@ -33,10 +33,13 @@ from app.api.mqtt import router as mqtt_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.cards import router as cards_router
 from app.api.v1.doors import router as doors_router
+from app.api.v1.access import router as access_router
 from app.api.health import router as health_router
 
 # Domain services
 from app.domain.services.mqtt_message_service import MqttMessageService
+from app.domain.services.device_communication_service import DeviceCommunicationService
+from app.domain.services.mqtt_device_handler import MqttDeviceHandler
 
 # Middleware imports
 from app.middleware.security import SecurityHeadersMiddleware
@@ -52,6 +55,8 @@ class ApplicationState:
     def __init__(self):
         self.mqtt_message_service: MqttMessageService = None
         self.mqtt_adapter: AiomqttAdapter = None
+        self.device_communication_service: DeviceCommunicationService = None
+        self.mqtt_device_handler: MqttDeviceHandler = None
         self.mqtt_task: asyncio.Task = None
         self.settings = get_settings()
         
@@ -71,6 +76,13 @@ class ApplicationState:
         # Domain service setup
         self.mqtt_message_service = MqttMessageService(repository=mqtt_repository)
         
+        # Set up device communication handler
+        self.mqtt_device_handler = MqttDeviceHandler(
+            device_communication_service=None,  # Will be set after MQTT adapter is created
+            access_validation_use_case=None,  # Will be set after MQTT adapter is created
+            mqtt_message_service=self.mqtt_message_service
+        )
+        
         # Log MQTT configuration
         logger.info("MQTT Configuration:", extra={
             "host": self.settings.MQTT_HOST,
@@ -80,10 +92,38 @@ class ApplicationState:
             "password": "configured" if self.settings.MQTT_PASSWORD else "not configured"
         })
         
-        # MQTT adapter setup with improved error handling
+        # MQTT adapter setup with device handler
         self.mqtt_adapter = AiomqttAdapter(
-            message_handler=self.mqtt_message_service.process_mqtt_message
+            message_handler=self.mqtt_device_handler.handle_message
         )
+        
+        # Set up device communication service
+        self.device_communication_service = DeviceCommunicationService(self.mqtt_adapter)
+        
+        # Set up access validation use case with repositories
+        from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
+        from app.infrastructure.persistence.adapters.door_repository import SqlAlchemyDoorRepository
+        from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
+        from app.infrastructure.persistence.adapters.permission_repository import PermissionRepository
+        from app.application.use_cases.access_use_cases import ValidateAccessUseCase
+        
+        card_repository = SqlAlchemyCardRepository(db_session_factory)
+        door_repository = SqlAlchemyDoorRepository(db_session_factory)
+        user_repository = SqlAlchemyUserRepository(db_session_factory)
+        permission_repository = PermissionRepository(AsyncSessionLocal())
+        
+        access_validation_use_case = ValidateAccessUseCase(
+            card_repository=card_repository,
+            door_repository=door_repository,
+            permission_repository=permission_repository,
+            user_repository=user_repository,
+            mqtt_service=self.mqtt_message_service,
+            device_communication_service=self.device_communication_service
+        )
+        
+        # Update device handler with complete dependencies
+        self.mqtt_device_handler.device_service = self.device_communication_service
+        self.mqtt_device_handler.access_use_case = access_validation_use_case
         
         logger.info("Application dependencies initialized successfully")
     
@@ -117,6 +157,19 @@ class ApplicationState:
             # Subscribe to test topic
             await self.mqtt_adapter.subscribe("test/#")
             logger.info("Subscribed to test topic")
+            
+            # Subscribe to device communication topics
+            device_topics = [
+                "access/requests/+",          # Device access requests
+                "access/commands/+/ack",      # Command acknowledgments  
+                "access/devices/+/status",    # Device status updates
+                "access/events/+/+",          # Device events (type/device_id)
+                "access/events/+"             # Device events (device_id only)
+            ]
+            
+            for topic in device_topics:
+                await self.mqtt_adapter.subscribe(topic)
+                logger.info(f"Subscribed to device topic: {topic}")
             
         except asyncio.CancelledError:
             logger.info("MQTT connection task cancelled")
@@ -246,10 +299,7 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(RepositoryError)
     async def repository_exception_handler(request: Request, exc: RepositoryError):
         logger.error(
-            "Repository error occurred",
-            endpoint=str(request.url.path),
-            method=request.method,
-            error=str(exc),
+            f"Repository error occurred at {request.method} {request.url.path}: {str(exc)}",
             exc_info=True
         )
         
@@ -264,7 +314,7 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": "database_error",
                 "message": "A database error occurred",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "path": str(request.url.path)
             }
         )
@@ -272,10 +322,7 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(MqttAdapterError)
     async def mqtt_adapter_exception_handler(request: Request, exc: MqttAdapterError):
         logger.error(
-            "MQTT adapter error occurred",
-            endpoint=str(request.url.path),
-            method=request.method,
-            error=str(exc),
+            f"MQTT adapter error occurred at {request.method} {request.url.path}: {str(exc)}",
             exc_info=True
         )
         
@@ -290,7 +337,7 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": "messaging_error",
                 "message": "A messaging system error occurred",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "path": str(request.url.path)
             }
         )
@@ -298,10 +345,7 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(DomainError)
     async def domain_exception_handler(request: Request, exc: DomainError):
         logger.warning(
-            "Domain error occurred",
-            endpoint=str(request.url.path),
-            method=request.method,
-            error=str(exc)
+            f"Domain error occurred at {request.method} {request.url.path}: {str(exc)}"
         )
         
         api_requests.labels(
@@ -315,7 +359,7 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": "domain_error",
                 "message": str(exc),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "path": str(request.url.path)
             }
         )
@@ -323,10 +367,7 @@ def setup_exception_handlers(app: FastAPI):
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         logger.error(
-            "Unexpected error occurred",
-            endpoint=str(request.url.path),
-            method=request.method,
-            error=str(exc),
+            f"Unexpected error occurred at {request.method} {request.url.path}: {str(exc)}",
             exc_info=True
         )
         
@@ -341,7 +382,7 @@ def setup_exception_handlers(app: FastAPI):
             content={
                 "error": "internal_error",
                 "message": "An unexpected error occurred",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "path": str(request.url.path)
             }
         )
@@ -357,6 +398,7 @@ def setup_routers(app: FastAPI):
     app.include_router(auth_router, prefix="/api/v1", tags=["Authentication"])
     app.include_router(cards_router, prefix="/api/v1", tags=["Cards"])
     app.include_router(doors_router, prefix="/api/v1", tags=["Doors"])
+    app.include_router(access_router, prefix="/api/v1", tags=["Access Control"])
     
     # Root endpoint
     @app.get("/")

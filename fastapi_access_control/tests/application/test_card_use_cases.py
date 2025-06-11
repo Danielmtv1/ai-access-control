@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, Mock
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timezone, UTC, timedelta
 from app.application.use_cases.card_use_cases import (
     CreateCardUseCase, GetCardUseCase, GetCardByCardIdUseCase, GetUserCardsUseCase,
     UpdateCardUseCase, DeactivateCardUseCase, SuspendCardUseCase, ListCardsUseCase, 

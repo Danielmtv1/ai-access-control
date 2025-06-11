@@ -1,7 +1,7 @@
 import logging
 import sys
 import json
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from typing import Dict, Any
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware

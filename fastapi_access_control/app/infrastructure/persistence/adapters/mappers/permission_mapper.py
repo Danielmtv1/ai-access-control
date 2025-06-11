@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.domain.entities.permission import Permission, PermissionStatus
 from app.infrastructure.database.models.permission import PermissionModel
 
@@ -59,5 +59,5 @@ class PermissionMapper:
         model.pin_required = permission.pin_required
         model.created_by = permission.created_by
         model.last_used = permission.last_used
-        model.updated_at = datetime.utcnow()
+        model.updated_at = datetime.now(timezone.utc)
         return model

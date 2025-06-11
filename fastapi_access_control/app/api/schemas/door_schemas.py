@@ -1,7 +1,8 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
-from datetime import datetime, time
+from datetime import datetime, timezone, time
 from enum import Enum
+from uuid import UUID
 
 class DoorTypeEnum(str, Enum):
     ENTRANCE = "entrance"
@@ -223,7 +224,7 @@ class DoorStatusRequest(BaseModel):
 
 class DoorResponse(BaseModel):
     """Response model for door data"""
-    id: int = Field(..., description="Door database ID", example=1)
+    id: UUID = Field(..., description="Door database ID", example="06191358-d041-4a45-9c68-b324f566e340")  # ← Cambiar a UUID
     name: str = Field(..., description="Name of the door", example="Main Entrance")
     location: str = Field(..., description="Location of the door", example="Building A - Ground Floor")
     description: Optional[str] = Field(None, description="Description of the door", example="Main entrance to Building A")
@@ -275,7 +276,7 @@ class DoorResponse(BaseModel):
         from_attributes = True
         schema_extra = {
             "example": {
-                "id": 1,
+                "id": "06191358-d041-4a45-9c68-b324f566e340",
                 "name": "Main Entrance",
                 "location": "Building A - Ground Floor",
                 "description": "Main entrance to Building A",
@@ -310,7 +311,7 @@ class DoorListResponse(BaseModel):
             "example": {
                 "doors": [
                     {
-                        "id": 1,
+                        "id": "06191358-d041-4a45-9c68-b324f566e340",
                         "name": "Main Entrance",
                         "location": "Building A - Ground Floor",
                         "description": "Main entrance to Building A",

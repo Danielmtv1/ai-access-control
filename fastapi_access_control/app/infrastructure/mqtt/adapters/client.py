@@ -37,7 +37,7 @@ class MqttClient:
             # The message processing loop will handle the connection and messages
             # We set connected to False initially and update it in the loop
             self.connected = False
-            mqtt_connection_status.set(0)
+            mqtt_connection_status.set(1)
             
         except Exception as e:
             self.connected = False

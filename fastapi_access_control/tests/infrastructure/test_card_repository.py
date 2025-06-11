@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timezone, UTC, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
 from app.infrastructure.database.models.card import CardModel

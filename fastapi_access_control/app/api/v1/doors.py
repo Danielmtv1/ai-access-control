@@ -14,6 +14,7 @@ from app.api.schemas.door_schemas import (
 from app.api.error_handlers import map_domain_error_to_http
 from app.api.dependencies.auth_dependencies import get_current_active_user
 import logging
+from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,7 @@ async def create_door(
     }
 )
 async def get_door(
-    door_id: int,
+    door_id: UUID,
     door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
@@ -222,7 +223,7 @@ async def list_doors(
     description="Update door information"
 )
 async def update_door(
-    door_id: int,
+    door_id: UUID,
     door_data: UpdateDoorRequest = Body(..., description="Door update data"),
     door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
@@ -268,7 +269,7 @@ async def update_door(
     description="Change the status of a door (active, maintenance, emergency, etc.)"
 )
 async def set_door_status(
-    door_id: int,
+    door_id: UUID,
     status_data: DoorStatusRequest = Body(..., description="New door status"),
     door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
@@ -294,7 +295,7 @@ async def set_door_status(
     description="Delete a door permanently"
 )
 async def delete_door(
-    door_id: int,
+    door_id: UUID,
     door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):

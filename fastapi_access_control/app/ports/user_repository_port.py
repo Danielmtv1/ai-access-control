@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
+from uuid import UUID
 from ..domain.entities.user import User
 
 class UserRepositoryPort(ABC):
@@ -11,7 +12,7 @@ class UserRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def get_by_id(self, user_id: int) -> Optional[User]:
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
         """Get user by ID"""
         pass
     
@@ -26,7 +27,7 @@ class UserRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def delete(self, user_id: int) -> bool:
+    async def delete(self, user_id: UUID) -> bool:
         """Delete user by ID"""
         pass
     

@@ -1,9 +1,10 @@
 from typing import Optional, List
-from datetime import datetime, UTC, time
+from datetime import datetime, timezone, UTC, time
 from ...domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
 from ...ports.door_repository_port import DoorRepositoryPort
 from ...domain.exceptions import DomainError
 import logging
+from uuid import UUID, uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +50,7 @@ class CreateDoorUseCase:
         # Create door entity
         now = datetime.now(UTC).replace(tzinfo=None)
         door = Door(
-            id=0,  # Will be set by database
+            id=uuid4(),  # Will be set by database
             name=name,
             location=location,
             description=description,
@@ -74,7 +75,7 @@ class GetDoorUseCase:
     def __init__(self, door_repository: DoorRepositoryPort):
         self.door_repository = door_repository
     
-    async def execute(self, door_id: int) -> Door:
+    async def execute(self, door_id: UUID) -> Door:
         """Get door by ID"""
         door = await self.door_repository.get_by_id(door_id)
         if not door:
@@ -111,7 +112,7 @@ class UpdateDoorUseCase:
         self.door_repository = door_repository
     
     async def execute(self, 
-                     door_id: int,
+                     door_id: UUID,
                      name: Optional[str] = None,
                      location: Optional[str] = None,
                      description: Optional[str] = None,
@@ -176,7 +177,7 @@ class SetDoorStatusUseCase:
     def __init__(self, door_repository: DoorRepositoryPort):
         self.door_repository = door_repository
     
-    async def execute(self, door_id: int, status: str) -> Door:
+    async def execute(self, door_id: UUID, status: str) -> Door:
         """Set door status"""
         
         # Get existing door
@@ -236,7 +237,7 @@ class DeleteDoorUseCase:
     def __init__(self, door_repository: DoorRepositoryPort):
         self.door_repository = door_repository
     
-    async def execute(self, door_id: int) -> bool:
+    async def execute(self, door_id: UUID) -> bool:
         """Delete door"""
         
         # Check if door exists

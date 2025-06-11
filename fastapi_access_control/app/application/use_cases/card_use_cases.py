@@ -1,5 +1,5 @@
 from typing import Optional, List
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from uuid import UUID
 from ...domain.entities.card import Card, CardType, CardStatus
 from ...ports.card_repository_port import CardRepositoryPort
@@ -118,7 +118,11 @@ class UpdateCardUseCase:
         if status:
             card.status = CardStatus(status)
         if valid_until is not None:
-            card.valid_until = valid_until
+            # Convert to timezone-naive if it has timezone info
+            if valid_until.tzinfo:
+                card.valid_until = valid_until.replace(tzinfo=None)
+            else:
+                card.valid_until = valid_until
         
         card.updated_at = datetime.now(UTC).replace(tzinfo=None)
         

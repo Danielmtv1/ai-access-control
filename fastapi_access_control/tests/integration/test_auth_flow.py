@@ -5,7 +5,7 @@ from app.main import app
 from app.domain.entities.user import User, Role, UserStatus
 from app.domain.services.auth_service import AuthService
 from app.domain.value_objects.auth import UserClaims
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 
 class TestAuthenticationFlow:
     """Integration tests for complete authentication flow"""

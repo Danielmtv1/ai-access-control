@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
+from datetime import time
 from ..domain.entities.permission import Permission
-
+from uuid import UUID
 class PermissionRepositoryPort(ABC):
     """Port for Permission repository operations"""
     
@@ -11,27 +12,27 @@ class PermissionRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def get_by_id(self, permission_id: int) -> Optional[Permission]:
+    async def get_by_id(self, permission_id: UUID) -> Optional[Permission]:
         """Get permission by ID"""
         pass
     
     @abstractmethod
-    async def get_by_user_and_door(self, user_id: int, door_id: int) -> List[Permission]:
+    async def get_by_user_and_door_list(self, user_id: UUID, door_id: UUID) -> List[Permission]:
         """Get permissions for user and door"""
         pass
     
     @abstractmethod
-    async def get_by_user_id(self, user_id: int) -> List[Permission]:
+    async def get_by_user_id(self, user_id: UUID) -> List[Permission]:
         """Get all permissions for a user"""
         pass
     
     @abstractmethod
-    async def get_by_door_id(self, door_id: int) -> List[Permission]:
+    async def get_by_door_id(self, door_id: UUID) -> List[Permission]:
         """Get all permissions for a door"""
         pass
     
     @abstractmethod
-    async def get_by_card_id(self, card_id: int) -> List[Permission]:
+    async def get_by_card_id(self, card_id: UUID) -> List[Permission]:
         """Get all permissions for a card"""
         pass
     
@@ -41,7 +42,7 @@ class PermissionRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def delete(self, permission_id: int) -> bool:
+    async def delete(self, permission_id: UUID) -> bool:
         """Delete permission by ID"""
         pass
     
@@ -56,6 +57,11 @@ class PermissionRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def check_access(self, user_id: int, door_id: int, card_id: Optional[int] = None) -> Optional[Permission]:
-        """Check if user has access to door (optionally with specific card)"""
+    async def check_access(self, user_id: UUID, door_id: UUID, current_time: time, current_day: str) -> bool:
+        """Check if user has access to door at the given time and day"""
+        pass
+    
+    @abstractmethod
+    async def get_by_user_and_door(self, user_id: UUID, door_id: UUID) -> Optional[Permission]:
+        """Get permission for specific user and door combination"""
         pass

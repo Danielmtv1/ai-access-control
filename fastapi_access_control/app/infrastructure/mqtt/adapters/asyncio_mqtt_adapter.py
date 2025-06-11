@@ -10,6 +10,8 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from app.ports.mqtt_client_port import MqttClientPort
 from app.domain.exceptions import MqttAdapterError
 from app.config import get_settings
+from app.infrastructure.observability.metrics import mqtt_connection_status
+
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +109,7 @@ class AiomqttAdapter(MqttClientPort):
         while self._should_reconnect:
             try:
                 self._connection_state = ConnectionState.CONNECTING
+                mqtt_connection_status.set(1)  # Reset connection status
                 logger.info("Attempting to connect to MQTT broker...")
                 
                 # Create new client
@@ -134,6 +137,7 @@ class AiomqttAdapter(MqttClientPort):
                     
             except aiomqtt.MqttError as e:
                 self._connection_state = ConnectionState.FAILED
+                mqtt_connection_status.set(0)  # Set connection status to failed
                 logger.error(f"MQTT error during connection: {str(e)}", exc_info=True)
                 
                 if self._should_reconnect:

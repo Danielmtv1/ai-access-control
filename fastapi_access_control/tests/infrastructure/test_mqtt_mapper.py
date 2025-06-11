@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from app.domain.entities.mqtt_message import MqttMessage
 from app.infrastructure.database.models.mqtt_message import MqttMessageModel
 from app.infrastructure.persistence.mappers.mqtt_message_mapper import MqttMessageMapper
@@ -11,7 +11,7 @@ def test_mapper_to_domain():
         id=1,
         topic="test/topic",
         message="test message",
-        timestamp=datetime.utcnow()
+        timestamp=datetime.now(timezone.utc)
     )
     
     # Convert to domain entity

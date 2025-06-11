@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock
-from datetime import datetime, UTC, timedelta, time
+from datetime import datetime, timezone, UTC, timedelta, time
 from app.application.use_cases.door_use_cases import (
     CreateDoorUseCase, GetDoorUseCase, GetDoorByNameUseCase, GetDoorsByLocationUseCase,
     UpdateDoorUseCase, SetDoorStatusUseCase, ListDoorsUseCase, GetActiveDoorsUseCase,

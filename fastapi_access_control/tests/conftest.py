@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
-from datetime import datetime, UTC, timedelta, time
+from datetime import datetime, timezone, UTC, timedelta, time
 from uuid import UUID, uuid4
 
 from app.shared.database.base import Base

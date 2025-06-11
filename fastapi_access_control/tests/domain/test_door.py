@@ -1,6 +1,12 @@
 import pytest
-from datetime import datetime, UTC, timedelta, time
+import time as time_module
+from datetime import datetime, timezone, timedelta, time
+from uuid import UUID
 from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
+
+# Test UUIDs for consistent test data
+TEST_DOOR_ID = UUID("f47ac10b-58cc-4372-a567-0e02b2c3d483")
+TEST_USER_ID = UUID("f47ac10b-58cc-4372-a567-0e02b2c3d479")
 
 class TestAccessSchedule:
     """Test cases for AccessSchedule value object"""
@@ -40,7 +46,7 @@ class TestDoor:
     
     def test_door_creation(self):
         """Test Door entity creation with valid data"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         schedule = AccessSchedule(
             days_of_week=[0, 1, 2, 3, 4],
             start_time=time(9, 0),
@@ -48,7 +54,7 @@ class TestDoor:
         )
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -64,7 +70,7 @@ class TestDoor:
             failed_attempts=0
         )
         
-        assert door.id == 1
+        assert door.id == TEST_DOOR_ID
         assert door.name == "Main Entrance"
         assert door.location == "Building A"
         assert door.door_type == DoorType.ENTRANCE
@@ -81,10 +87,10 @@ class TestDoor:
     
     def test_door_is_active_with_active_status(self):
         """Test door is_active returns True for ACTIVE status"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -98,10 +104,10 @@ class TestDoor:
     
     def test_door_is_active_with_inactive_status(self):
         """Test door is_active returns False for non-ACTIVE status"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -115,10 +121,10 @@ class TestDoor:
     
     def test_door_is_accessible_when_active_and_no_schedule(self):
         """Test door is_accessible returns True when active and no schedule"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -133,10 +139,10 @@ class TestDoor:
     
     def test_door_is_accessible_when_inactive(self):
         """Test door is_accessible returns False when inactive"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -150,10 +156,10 @@ class TestDoor:
     
     def test_door_is_accessible_when_locked_out(self):
         """Test door is_accessible returns False when locked out"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -168,10 +174,10 @@ class TestDoor:
     
     def test_door_is_locked_out_with_future_locked_until(self):
         """Test is_locked_out returns True when locked_until is in the future"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -186,10 +192,10 @@ class TestDoor:
     
     def test_door_is_locked_out_with_past_locked_until(self):
         """Test is_locked_out returns False when locked_until is in the past"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -204,10 +210,10 @@ class TestDoor:
     
     def test_door_is_high_security(self):
         """Test is_high_security returns True for HIGH and CRITICAL levels"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         high_door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="High Security Door",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -245,10 +251,10 @@ class TestDoor:
     
     def test_door_requires_master_access(self):
         """Test requires_master_access returns True only for CRITICAL level"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         critical_door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Critical Security Door",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -274,10 +280,10 @@ class TestDoor:
     
     def test_door_record_successful_access(self):
         """Test record_successful_access updates door state"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -291,7 +297,9 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
-        door.record_successful_access(user_id=1)
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
+        door.record_successful_access(user_id=TEST_USER_ID)
         
         assert door.last_access is not None
         assert door.failed_attempts == 0
@@ -300,10 +308,10 @@ class TestDoor:
     
     def test_door_record_failed_attempt(self):
         """Test record_failed_attempt increments failed attempts"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -318,6 +326,8 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
         door.record_failed_attempt()
         
         assert door.failed_attempts == 1
@@ -326,10 +336,10 @@ class TestDoor:
     
     def test_door_record_failed_attempt_triggers_lockout(self):
         """Test record_failed_attempt triggers lockout when max attempts reached"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -350,10 +360,10 @@ class TestDoor:
     
     def test_door_reset_failed_attempts(self):
         """Test reset_failed_attempts clears failed attempts and lockout"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -367,6 +377,8 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
         door.reset_failed_attempts()
         
         assert door.failed_attempts == 0
@@ -375,10 +387,10 @@ class TestDoor:
     
     def test_door_set_emergency_open(self):
         """Test set_emergency_open changes status to EMERGENCY_OPEN"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -390,6 +402,8 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
         door.set_emergency_open()
         
         assert door.status == DoorStatus.EMERGENCY_OPEN
@@ -397,10 +411,10 @@ class TestDoor:
     
     def test_door_set_emergency_locked(self):
         """Test set_emergency_locked changes status to EMERGENCY_LOCKED"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -412,6 +426,8 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
         door.set_emergency_locked()
         
         assert door.status == DoorStatus.EMERGENCY_LOCKED
@@ -419,10 +435,10 @@ class TestDoor:
     
     def test_door_set_maintenance_mode(self):
         """Test set_maintenance_mode changes status to MAINTENANCE"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -434,6 +450,8 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
         door.set_maintenance_mode()
         
         assert door.status == DoorStatus.MAINTENANCE
@@ -441,10 +459,10 @@ class TestDoor:
     
     def test_door_activate(self):
         """Test activate changes status to ACTIVE and resets failed attempts"""
-        now = datetime.now(UTC).replace(tzinfo=None)
+        now = datetime.now()
         
         door = Door(
-            id=1,
+            id=TEST_DOOR_ID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -458,6 +476,8 @@ class TestDoor:
         
         original_updated_at = door.updated_at
         
+        # Add small delay to ensure timestamp difference
+        time_module.sleep(0.001)
         door.activate()
         
         assert door.status == DoorStatus.ACTIVE

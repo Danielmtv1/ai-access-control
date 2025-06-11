@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List, Callable
+from uuid import UUID
 from app.ports.card_repository_port import CardRepositoryPort
 from app.domain.entities.card import Card, CardStatus
 from app.infrastructure.database.models.card import CardModel
@@ -34,7 +35,7 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 logger.error(f"Database error creating card: {e}")
                 raise RepositoryError(f"Error creating card: {e}") from e
     
-    async def get_by_id(self, card_id: int) -> Optional[Card]:
+    async def get_by_id(self, card_id: UUID) -> Optional[Card]:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -54,13 +55,13 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                     select(CardModel).where(CardModel.card_id == card_id)
                 )
                 card_model = result.scalar_one_or_none()
-                
+                logger.info(f"Found card with card_id: {card_id}" if card_model else f"No card found with card_id: {card_id}")
                 return CardMapper.to_domain(card_model) if card_model else None
             except SQLAlchemyError as e:
                 logger.error(f"Database error getting card by card_id: {e}")
                 raise RepositoryError(f"Error getting card: {e}") from e
     
-    async def get_by_user_id(self, user_id: int) -> List[Card]:
+    async def get_by_user_id(self, user_id: UUID) -> List[Card]:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -94,7 +95,7 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 logger.error(f"Database error updating card: {e}")
                 raise RepositoryError(f"Error updating card: {e}") from e
     
-    async def delete(self, card_id: int) -> bool:
+    async def delete(self, card_id: UUID) -> bool:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(

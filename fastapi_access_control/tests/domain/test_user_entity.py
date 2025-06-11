@@ -2,7 +2,7 @@
 Tests for User entity
 """
 import pytest
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from uuid import UUID, uuid4
 
 from app.domain.entities.user import User, Role, UserStatus
