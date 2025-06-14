@@ -102,5 +102,5 @@ class DoorMapper:
         model.failed_attempts = door.failed_attempts
         model.locked_until = door.locked_until
         model.last_access = door.last_access
-        model.updated_at = datetime.now(timezone.utc)
+        model.updated_at = datetime.now()
         return model

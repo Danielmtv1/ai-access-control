@@ -1,11 +1,19 @@
 import logging
 import sys
 import json
+import uuid
 from datetime import datetime, timezone, UTC
 from typing import Dict, Any
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+
+class UUIDEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles UUID objects"""
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        return super().default(obj)
 
 class JsonFormatter(logging.Formatter):
     """JSON formatter for structured logging"""
@@ -33,7 +41,7 @@ class JsonFormatter(logging.Formatter):
                 "traceback": self.formatException(record.exc_info)
             }
         
-        return json.dumps(log_data)
+        return json.dumps(log_data, cls=UUIDEncoder)
 
 def configure_logging():
     """Configure structured logging for the application"""

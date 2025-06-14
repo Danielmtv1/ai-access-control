@@ -13,10 +13,10 @@ from app.ports.door_repository_port import DoorRepositoryPort
 from app.ports.permission_repository_port import PermissionRepositoryPort
 from app.ports.user_repository_port import UserRepositoryPort
 from app.domain.services.mqtt_message_service import MqttMessageService
-from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
-from app.infrastructure.persistence.adapters.door_repository import SqlAlchemyDoorRepository
-from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
-from app.shared.database.session import get_db
+from app.api.dependencies.repository_dependencies import (
+    get_card_repository, get_door_repository, get_user_repository, 
+    get_permission_repository, get_mqtt_message_service
+)
 from app.domain.exceptions import (
     EntityNotFoundError,
     InvalidCardError,
@@ -40,35 +40,6 @@ router = APIRouter(
 )
 
 
-async def get_card_repository(db=Depends(get_db)) -> CardRepositoryPort:
-    """Dependency for card repository."""
-    return SqlAlchemyCardRepository(lambda: db)
-
-
-async def get_door_repository(db=Depends(get_db)) -> DoorRepositoryPort:
-    """Dependency for door repository."""
-    return SqlAlchemyDoorRepository(lambda: db)
-
-
-async def get_user_repository(db=Depends(get_db)) -> UserRepositoryPort:
-    """Dependency for user repository."""
-    return SqlAlchemyUserRepository(lambda: db)
-
-
-async def get_permission_repository(db=Depends(get_db)):
-    """Dependency for permission repository."""
-    # Import here to avoid circular imports
-    from app.infrastructure.persistence.adapters.permission_repository import PermissionRepository
-    return PermissionRepository(db)
-
-
-async def get_mqtt_service(db=Depends(get_db)) -> MqttMessageService:
-    """Dependency for MQTT message service."""
-    # Import here to avoid circular imports
-    from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
-    
-    mqtt_repository = SqlAlchemyMqttMessageRepository(lambda: db)
-    return MqttMessageService(mqtt_repository)
 
 
 @router.post(
@@ -157,7 +128,7 @@ async def validate_access(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     permission_repository = Depends(get_permission_repository),
     user_repository: UserRepositoryPort = Depends(get_user_repository),
-    mqtt_service: MqttMessageService = Depends(get_mqtt_service)
+    mqtt_service: MqttMessageService = Depends(get_mqtt_message_service)
 ) -> AccessValidationResponse:
     """
     Validate access request from IoT device.
@@ -166,7 +137,7 @@ async def validate_access(
     at the current time, considering all business rules and constraints.
     """
     try:
-        logger.info(f"Access validation request received: {validation_request.dict()}")
+        logger.info(f"Access validation request received: {validation_request.model_dump()}")
         
         # Create use case and execute validation
         validate_use_case = ValidateAccessUseCase(
@@ -174,7 +145,8 @@ async def validate_access(
             door_repository=door_repository,
             permission_repository=permission_repository,
             user_repository=user_repository,
-            mqtt_service=mqtt_service
+            mqtt_service=mqtt_service,
+            device_communication_service=None  # No device communication in this endpoint
         )
         
         result = await validate_use_case.execute(

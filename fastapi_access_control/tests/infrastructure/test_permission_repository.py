@@ -30,9 +30,9 @@ class TestPermissionRepository:
     def sample_permission(self):
         """Sample permission entity."""
         return Permission(
-            id=1,
-            user_id=1,
-            door_id=1,
+            id=SAMPLE_CARD_UUID,
+            user_id=SAMPLE_CARD_UUID,
+            door_id=SAMPLE_CARD_UUID,
             card_number="TEST123",
             status=PermissionStatus.ACTIVE,
             valid_from=time(8, 0),
@@ -47,9 +47,9 @@ class TestPermissionRepository:
     def sample_permission_model(self):
         """Sample permission database model."""
         return PermissionModel(
-            id=1,
-            user_id=1,
-            door_id=1,
+            id=SAMPLE_CARD_UUID,
+            user_id=SAMPLE_CARD_UUID,
+            door_id=SAMPLE_CARD_UUID,
             card_number="TEST123",
             status="active",
             valid_from=time(8, 0),

@@ -50,7 +50,7 @@ class AuthService:
         payload = {
             "sub": str(user.id),
             "iat": now,
-            "exp": now + timedelta(days=7),  # 7 days
+            "exp": now + timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS),
             "type": "refresh"
         }
         

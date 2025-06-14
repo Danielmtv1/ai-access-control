@@ -26,6 +26,7 @@ from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.door import Door, DoorStatus, SecurityLevel, DoorType
 from app.domain.entities.user import User, UserStatus, Role
 from app.domain.entities.permission import Permission, PermissionStatus
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2
 
 
 @pytest.fixture
@@ -86,7 +87,7 @@ def sample_entities():
     )
     
     door = Door(
-        id=1,
+        id=SAMPLE_DOOR_UUID,
         name="Main Entrance",
         location="Building A",
         door_type=DoorType.ENTRANCE,
@@ -97,11 +98,11 @@ def sample_entities():
     )
     
     permission = Permission(
-        id=1,
-        user_id=1,  # Use int instead of UUID for permission
-        door_id=1,
+        id=SAMPLE_USER_UUID,
+        user_id=user_id,
+        door_id=SAMPLE_DOOR_UUID,
         status=PermissionStatus.ACTIVE,
-        created_by=1,  # Use int instead of UUID
+        created_by=SAMPLE_USER_UUID,
         valid_from=datetime.now(timezone.utc),
         valid_until=None,
         created_at=datetime.now(timezone.utc),
@@ -150,7 +151,6 @@ def integrated_system(mock_mqtt_adapter, mock_repositories):
 
 class TestMqttDeviceIntegration:
     """Integration tests for complete MQTT device communication flow."""
-    TEST_DOOR_ID = UUID("550e8400-e29b-41d4-a716-446655440002")
     @pytest.mark.asyncio
     async def test_complete_access_granted_flow(self, integrated_system, sample_entities):
         """Test complete flow from device request to unlock command."""
@@ -169,7 +169,7 @@ class TestMqttDeviceIntegration:
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
-            "door_id": self.TEST_DOOR_ID,
+            "door_id": str(SAMPLE_DOOR_UUID),
             "pin": None,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": str(uuid4())
@@ -180,8 +180,8 @@ class TestMqttDeviceIntegration:
         
         # Verify access validation was called
         system['repositories']['card_repository'].get_by_card_id.assert_called_once_with("ABC123")
-        system['repositories']['door_repository'].get_by_id.assert_called_once_with(1)
-        system['repositories']['user_repository'].get_by_id.assert_called_once_with(1)
+        system['repositories']['door_repository'].get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
+        system['repositories']['user_repository'].get_by_id.assert_called_once_with(user_id)
         system['repositories']['permission_repository'].check_access.assert_called_once()
         
         # Verify MQTT responses were published
@@ -229,7 +229,7 @@ class TestMqttDeviceIntegration:
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
-            "door_id": self.TEST_DOOR_ID,
+            "door_id": str(SAMPLE_DOOR_UUID),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": str(uuid4())
         })
@@ -263,12 +263,11 @@ class TestMqttDeviceIntegration:
         
         # Create master card
         master_card = Card(
-            id=2,
+            id=SAMPLE_CARD_UUID_2,
             card_id="MASTER001",
-            user_id=1,
+            user_id=entities['user'].id,
             card_type=CardType.MASTER,
             status=CardStatus.ACTIVE,
-            issued_at=datetime.now(timezone.utc),
             valid_from=datetime.now(timezone.utc),
             valid_until=None,
             use_count=0,
@@ -287,7 +286,7 @@ class TestMqttDeviceIntegration:
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "MASTER001",
-            "door_id": self.TEST_DOOR_ID,
+            "door_id": str(SAMPLE_DOOR_UUID),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": str(uuid4())
         })
@@ -322,7 +321,7 @@ class TestMqttDeviceIntegration:
         
         # Create high-security door
         high_security_door = Door(
-            id=2,
+            id=SAMPLE_DOOR_UUID_2,
             name="Server Room",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -342,7 +341,7 @@ class TestMqttDeviceIntegration:
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
-            "door_id": 2,
+            "door_id": str(SAMPLE_DOOR_UUID_2),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": str(uuid4())
         })
@@ -579,7 +578,7 @@ class TestMqttDeviceIntegration:
             topic = f"access/requests/door_lock_00{i+1}"
             payload = json.dumps({
                 "card_id": "ABC123",
-                "door_id": self.TEST_DOOR_ID,
+                "door_id": str(SAMPLE_DOOR_UUID),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "message_id": str(uuid4())
             })
@@ -630,7 +629,7 @@ class TestErrorHandlingIntegration:
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
-            "door_id": self.TEST_DOOR_ID,
+            "door_id": str(SAMPLE_DOOR_UUID),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": str(uuid4())
         })
@@ -653,7 +652,7 @@ class TestErrorHandlingIntegration:
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
-            "door_id": self.TEST_DOOR_ID,
+            "door_id": str(SAMPLE_DOOR_UUID),
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "message_id": str(uuid4())
         })
@@ -720,7 +719,7 @@ class TestPerformanceIntegration:
             topic = f"access/requests/door_lock_{i % 10:03d}"
             payload = json.dumps({
                 "card_id": f"CARD_{i:03d}",
-                "door_id": (i % 5) + 1,
+                "door_id": str(SAMPLE_DOOR_UUID),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "message_id": str(uuid4())
             })

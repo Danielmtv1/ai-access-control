@@ -15,6 +15,7 @@ from app.domain.entities.device_message import (
     DeviceCommandType,
     DoorAction
 )
+from tests.conftest import SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_DOOR_UUID
 
 
 class TestDeviceCommandType:
@@ -50,7 +51,7 @@ class TestDeviceAccessRequest:
         
         request = DeviceAccessRequest(
             card_id="ABC123",
-            door_id=1,
+            door_id=SAMPLE_DOOR_UUID,
             device_id="door_lock_001",
             timestamp=timestamp,
             message_id=message_id,
@@ -59,7 +60,7 @@ class TestDeviceAccessRequest:
         )
         
         assert request.card_id == "ABC123"
-        assert request.door_id == 1
+        assert request.door_id == SAMPLE_DOOR_UUID
         assert request.device_id == "door_lock_001"
         assert request.timestamp == timestamp
         assert request.message_id == message_id
@@ -70,13 +71,13 @@ class TestDeviceAccessRequest:
         """Test factory method for creating device access request."""
         request = DeviceAccessRequest.create(
             card_id="XYZ789",
-            door_id=2,
+            door_id=SAMPLE_DOOR_UUID,
             device_id="door_lock_002",
             pin="5678"
         )
         
         assert request.card_id == "XYZ789"
-        assert request.door_id == 2
+        assert request.door_id == SAMPLE_DOOR_UUID
         assert request.device_id == "door_lock_002"
         assert request.pin == "5678"
         assert request.timestamp is not None
@@ -87,12 +88,12 @@ class TestDeviceAccessRequest:
         """Test device access request without PIN."""
         request = DeviceAccessRequest.create(
             card_id="DEF456",
-            door_id=3,
+            door_id=SAMPLE_DOOR_UUID,
             device_id="door_lock_003"
         )
         
         assert request.card_id == "DEF456"
-        assert request.door_id == 3
+        assert request.door_id == SAMPLE_DOOR_UUID
         assert request.device_id == "door_lock_003"
         assert request.pin is None
 

@@ -120,6 +120,196 @@ class Settings(BaseSettings):
         description="JWT signing algorithm"
     )
     
+    # Password Requirements
+    PASSWORD_MIN_LENGTH: int = Field(
+        default=8,
+        ge=6,
+        le=128,
+        description="Minimum password length"
+    )
+    PASSWORD_REQUIRE_UPPERCASE: bool = Field(
+        default=True,
+        description="Require uppercase letters in password"
+    )
+    PASSWORD_REQUIRE_LOWERCASE: bool = Field(
+        default=True,
+        description="Require lowercase letters in password"
+    )
+    PASSWORD_REQUIRE_NUMBERS: bool = Field(
+        default=True,
+        description="Require numbers in password"
+    )
+    PASSWORD_REQUIRE_SPECIAL: bool = Field(
+        default=True,
+        description="Require special characters in password"
+    )
+    
+    # Token Validation Limits
+    TOKEN_MIN_EXPIRE_SECONDS: int = Field(
+        default=60,
+        ge=30,
+        le=300,
+        description="Minimum token expiration in seconds"
+    )
+    TOKEN_MAX_EXPIRE_SECONDS: int = Field(
+        default=86400,
+        ge=3600,
+        le=604800,
+        description="Maximum token expiration in seconds"
+    )
+    
+    # API Configuration
+    DEFAULT_PAGE_SIZE: int = Field(
+        default=50,
+        ge=1,
+        le=1000,
+        description="Default pagination page size"
+    )
+    MAX_PAGE_SIZE: int = Field(
+        default=100,
+        ge=1,
+        le=1000,
+        description="Maximum pagination page size"
+    )
+    
+    # Rate Limiting
+    RATE_LIMIT_REQUESTS_PER_MINUTE: int = Field(
+        default=60,
+        ge=1,
+        le=10000,
+        description="Rate limit requests per minute"
+    )
+    RATE_LIMIT_WINDOW_SIZE: int = Field(
+        default=60,
+        ge=1,
+        le=3600,
+        description="Rate limit window size in seconds"
+    )
+    
+    # Door & Access Control
+    DEFAULT_MAX_ATTEMPTS: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Default maximum failed access attempts"
+    )
+    DEFAULT_LOCKOUT_DURATION: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description="Default lockout duration in seconds"
+    )
+    DEFAULT_UNLOCK_DURATION: int = Field(
+        default=5,
+        ge=1,
+        le=60,
+        description="Default door unlock duration in seconds"
+    )
+    
+    # Device Health & Monitoring
+    LOW_BATTERY_THRESHOLD: int = Field(
+        default=20,
+        ge=5,
+        le=50,
+        description="Low battery threshold percentage"
+    )
+    CRITICAL_BATTERY_THRESHOLD: int = Field(
+        default=10,
+        ge=1,
+        le=25,
+        description="Critical battery threshold percentage"
+    )
+    
+    # MQTT Advanced Configuration
+    MQTT_RETRY_ATTEMPTS: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="MQTT connection retry attempts"
+    )
+    MQTT_RETRY_MIN_WAIT: int = Field(
+        default=1,
+        ge=1,
+        le=10,
+        description="Minimum wait time between MQTT retries"
+    )
+    MQTT_RETRY_MAX_WAIT: int = Field(
+        default=60,
+        ge=10,
+        le=300,
+        description="Maximum wait time between MQTT retries"
+    )
+    MQTT_RECONNECT_DELAY: int = Field(
+        default=5,
+        ge=1,
+        le=60,
+        description="MQTT reconnection delay in seconds"
+    )
+    MQTT_COMMAND_TIMEOUT: int = Field(
+        default=30,
+        ge=5,
+        le=300,
+        description="MQTT command timeout in seconds"
+    )
+    MQTT_COMMAND_CLEANUP_SECONDS: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description="MQTT command cleanup interval in seconds"
+    )
+    MQTT_HIGH_PRIORITY_QOS: int = Field(
+        default=2,
+        ge=0,
+        le=2,
+        description="MQTT QoS for high priority messages"
+    )
+    
+    # MQTT Resilience Configuration
+    MQTT_CLIENT_ID: Optional[str] = Field(
+        default=None,
+        description="MQTT client ID (auto-generated if not specified)"
+    )
+    MQTT_CIRCUIT_BREAKER_THRESHOLD: int = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Circuit breaker failure threshold"
+    )
+    MQTT_CIRCUIT_BREAKER_TIMEOUT: int = Field(
+        default=60,
+        ge=10,
+        le=600,
+        description="Circuit breaker timeout in seconds"
+    )
+    MQTT_MESSAGE_BUFFER_SIZE: int = Field(
+        default=1000,
+        ge=100,
+        le=10000,
+        description="Message buffer size for offline scenarios"
+    )
+    MQTT_HEALTH_CHECK_INTERVAL: int = Field(
+        default=30,
+        ge=5,
+        le=300,
+        description="Health check interval in seconds"
+    )
+    
+    # Database Configuration
+    DB_POOL_RECYCLE_SECONDS: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description="Database pool recycle time in seconds"
+    )
+    
+    # Security Configuration
+    HSTS_MAX_AGE_SECONDS: int = Field(
+        default=31536000,  # 1 year
+        ge=86400,  # 1 day minimum
+        le=63072000,  # 2 years maximum
+        description="HSTS max age in seconds"
+    )
+    
     model_config = ConfigDict(
         env_file=".env",
         case_sensitive=False,

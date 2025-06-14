@@ -4,11 +4,12 @@ from datetime import datetime, timezone, UTC, timedelta
 from app.application.use_cases.card_use_cases import (
     CreateCardUseCase, GetCardUseCase, GetCardByCardIdUseCase, GetUserCardsUseCase,
     UpdateCardUseCase, DeactivateCardUseCase, SuspendCardUseCase, ListCardsUseCase, 
-    DeleteCardUseCase, CardNotFoundError
+    DeleteCardUseCase
 )
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.user import User, Role, UserStatus
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import DomainError, CardNotFoundError, UserNotFoundError, EntityAlreadyExistsError
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2
 
 class TestCreateCardUseCase:
     """Test cases for CreateCardUseCase"""
@@ -25,7 +26,7 @@ class TestCreateCardUseCase:
     def sample_user(self):
         now = datetime.now(UTC).replace(tzinfo=None)
         return User(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             email="test@example.com",
             hashed_password="hashed",
             full_name="Test User",
@@ -53,9 +54,9 @@ class TestCreateCardUseCase:
         
         # Mock card creation
         expected_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,
@@ -69,7 +70,7 @@ class TestCreateCardUseCase:
         # Execute use case
         result = await create_card_use_case.execute(
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type="employee",
             valid_from=now,
             valid_until=valid_until
@@ -77,9 +78,9 @@ class TestCreateCardUseCase:
         
         # Verify
         assert result.card_id == "CARD001"
-        assert result.user_id == 1
+        assert result.user_id == SAMPLE_USER_UUID
         assert result.card_type == CardType.EMPLOYEE
-        mock_user_repository.get_by_id.assert_called_once_with(1)
+        mock_user_repository.get_by_id.assert_called_once_with(SAMPLE_USER_UUID)
         mock_card_repository.get_by_card_id.assert_called_once_with("CARD001")
         mock_card_repository.create.assert_called_once()
     
@@ -92,7 +93,7 @@ class TestCreateCardUseCase:
         mock_user_repository.get_by_id.return_value = None
         
         # Execute and verify exception
-        with pytest.raises(DomainError, match="User with ID 999 not found"):
+        with pytest.raises(UserNotFoundError, match="User with identifier '999' not found"):
             await create_card_use_case.execute(
                 card_id="CARD001",
                 user_id=999,
@@ -114,9 +115,9 @@ class TestCreateCardUseCase:
         
         # Mock card already exists
         existing_card = Card(
-            id=2,
+            id=SAMPLE_CARD_UUID_2,
             card_id="CARD001",
-            user_id=2,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,
@@ -128,15 +129,15 @@ class TestCreateCardUseCase:
         mock_card_repository.get_by_card_id.return_value = existing_card
         
         # Execute and verify exception
-        with pytest.raises(DomainError, match="Card with ID CARD001 already exists"):
+        with pytest.raises(EntityAlreadyExistsError, match="Card with identifier 'CARD001' already exists"):
             await create_card_use_case.execute(
                 card_id="CARD001",
-                user_id=1,
+                user_id=SAMPLE_USER_UUID,
                 card_type="employee",
                 valid_from=now
             )
         
-        mock_user_repository.get_by_id.assert_called_once_with(1)
+        mock_user_repository.get_by_id.assert_called_once_with(SAMPLE_USER_UUID)
         mock_card_repository.get_by_card_id.assert_called_once_with("CARD001")
         mock_card_repository.create.assert_not_called()
 
@@ -156,9 +157,9 @@ class TestGetCardUseCase:
         """Test successful card retrieval"""
         now = datetime.now(UTC).replace(tzinfo=None)
         expected_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,
@@ -169,17 +170,17 @@ class TestGetCardUseCase:
         )
         mock_card_repository.get_by_id.return_value = expected_card
         
-        result = await get_card_use_case.execute(1)
+        result = await get_card_use_case.execute(SAMPLE_CARD_UUID)
         
         assert result == expected_card
-        mock_card_repository.get_by_id.assert_called_once_with(1)
+        mock_card_repository.get_by_id.assert_called_once_with(SAMPLE_CARD_UUID)
     
     @pytest.mark.asyncio
     async def test_get_card_not_found(self, get_card_use_case, mock_card_repository):
         """Test card retrieval when card doesn't exist"""
         mock_card_repository.get_by_id.return_value = None
         
-        with pytest.raises(CardNotFoundError, match="Card with ID 999 not found"):
+        with pytest.raises(CardNotFoundError, match="Card with identifier '999' not found"):
             await get_card_use_case.execute(999)
         
         mock_card_repository.get_by_id.assert_called_once_with(999)
@@ -200,9 +201,9 @@ class TestUpdateCardUseCase:
         """Test successful card update"""
         now = datetime.now(UTC).replace(tzinfo=None)
         original_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,
@@ -213,9 +214,9 @@ class TestUpdateCardUseCase:
         )
         
         updated_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.VISITOR,  # Updated
             status=CardStatus.SUSPENDED,  # Updated
             valid_from=now,
@@ -229,7 +230,7 @@ class TestUpdateCardUseCase:
         mock_card_repository.update.return_value = updated_card
         
         result = await update_card_use_case.execute(
-            card_id=1,
+            card_id=SAMPLE_CARD_UUID,
             card_type="visitor",
             status="suspended",
             valid_until=now + timedelta(days=30)
@@ -238,7 +239,7 @@ class TestUpdateCardUseCase:
         assert result.card_type == CardType.VISITOR
         assert result.status == CardStatus.SUSPENDED
         assert result.valid_until == now + timedelta(days=30)
-        mock_card_repository.get_by_id.assert_called_once_with(1)
+        mock_card_repository.get_by_id.assert_called_once_with(SAMPLE_CARD_UUID)
         mock_card_repository.update.assert_called_once()
     
     @pytest.mark.asyncio
@@ -246,7 +247,7 @@ class TestUpdateCardUseCase:
         """Test card update when card doesn't exist"""
         mock_card_repository.get_by_id.return_value = None
         
-        with pytest.raises(CardNotFoundError, match="Card with ID 999 not found"):
+        with pytest.raises(CardNotFoundError, match="Card with identifier '999' not found"):
             await update_card_use_case.execute(card_id=999, card_type="visitor")
         
         mock_card_repository.get_by_id.assert_called_once_with(999)
@@ -268,9 +269,9 @@ class TestSuspendCardUseCase:
         """Test successful card suspension"""
         now = datetime.now(UTC).replace(tzinfo=None)
         original_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,
@@ -282,9 +283,9 @@ class TestSuspendCardUseCase:
         
         # Simulate card being suspended
         suspended_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.SUSPENDED,  # Updated by domain logic
             valid_from=now,
@@ -297,10 +298,10 @@ class TestSuspendCardUseCase:
         mock_card_repository.get_by_id.return_value = original_card
         mock_card_repository.update.return_value = suspended_card
         
-        result = await suspend_card_use_case.execute(1)
+        result = await suspend_card_use_case.execute(SAMPLE_CARD_UUID)
         
         assert result.status == CardStatus.SUSPENDED
-        mock_card_repository.get_by_id.assert_called_once_with(1)
+        mock_card_repository.get_by_id.assert_called_once_with(SAMPLE_CARD_UUID)
         mock_card_repository.update.assert_called_once()
 
 class TestListCardsUseCase:
@@ -320,9 +321,9 @@ class TestListCardsUseCase:
         now = datetime.now(UTC).replace(tzinfo=None)
         cards = [
             Card(
-                id=1,
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
+                user_id=SAMPLE_USER_UUID,
                 card_type=CardType.EMPLOYEE,
                 status=CardStatus.ACTIVE,
                 valid_from=now,
@@ -332,9 +333,9 @@ class TestListCardsUseCase:
                 use_count=0
             ),
             Card(
-                id=2,
+                id=SAMPLE_CARD_UUID_2,
                 card_id="CARD002",
-                user_id=2,
+                user_id=SAMPLE_USER_UUID,
                 card_type=CardType.VISITOR,
                 status=CardStatus.ACTIVE,
                 valid_from=now,
@@ -370,9 +371,9 @@ class TestDeleteCardUseCase:
         """Test successful card deletion"""
         now = datetime.now(UTC).replace(tzinfo=None)
         existing_card = Card(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             card_id="CARD001",
-            user_id=1,
+            user_id=SAMPLE_USER_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,
@@ -385,19 +386,19 @@ class TestDeleteCardUseCase:
         mock_card_repository.get_by_id.return_value = existing_card
         mock_card_repository.delete.return_value = True
         
-        result = await delete_card_use_case.execute(1)
+        result = await delete_card_use_case.execute(SAMPLE_CARD_UUID)
         
         assert result is True
-        mock_card_repository.get_by_id.assert_called_once_with(1)
-        mock_card_repository.delete.assert_called_once_with(1)
+        mock_card_repository.get_by_id.assert_called_once_with(SAMPLE_CARD_UUID)
+        mock_card_repository.delete.assert_called_once_with(SAMPLE_CARD_UUID)
     
     @pytest.mark.asyncio
     async def test_delete_card_not_found(self, delete_card_use_case, mock_card_repository):
         """Test card deletion when card doesn't exist"""
         mock_card_repository.get_by_id.return_value = None
         
-        with pytest.raises(CardNotFoundError, match="Card with ID 999 not found"):
-            await delete_card_use_case.execute(999)
+        with pytest.raises(CardNotFoundError, match="Card with identifier .* not found"):
+            await delete_card_use_case.execute(SAMPLE_CARD_UUID)
         
-        mock_card_repository.get_by_id.assert_called_once_with(999)
+        mock_card_repository.get_by_id.assert_called_once_with(SAMPLE_CARD_UUID)
         mock_card_repository.delete.assert_not_called()

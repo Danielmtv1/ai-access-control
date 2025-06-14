@@ -32,6 +32,19 @@ class UserRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def list_users(self, skip: int = 0, limit: int = 100) -> List[User]:
-        """List users with pagination"""
+    async def list_users(self, 
+                        status: Optional[str] = None,
+                        role: Optional[str] = None,
+                        search: Optional[str] = None,
+                        limit: int = 100,
+                        offset: int = 0) -> List[User]:
+        """List users with filters and pagination"""
+        pass
+    
+    @abstractmethod
+    async def count_users(self,
+                         status: Optional[str] = None,
+                         role: Optional[str] = None,
+                         search: Optional[str] = None) -> int:
+        """Count users matching filters"""
         pass 

@@ -7,6 +7,7 @@ from datetime import datetime, timezone, UTC, timedelta
 from uuid import UUID, uuid4
 
 from app.domain.entities.user import User, Role, UserStatus
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2
 from app.domain.services.auth_service import AuthService
 from app.domain.value_objects.auth import UserClaims, TokenPair
 

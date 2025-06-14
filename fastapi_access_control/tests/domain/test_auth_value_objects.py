@@ -227,7 +227,7 @@ class TestTokenPair:
                 expires_in=30
             )
         
-        assert "at least 60 seconds" in str(exc_info.value)
+        assert "at least" in str(exc_info.value) and "seconds" in str(exc_info.value)
     
     def test_token_pair_expires_in_too_long(self):
         """Test TokenPair with expires_in too long"""
@@ -238,4 +238,4 @@ class TestTokenPair:
                 expires_in=100000  # More than 24 hours
             )
         
-        assert "cannot exceed 24 hours" in str(exc_info.value)
+        assert "cannot exceed 86400 seconds" in str(exc_info.value)

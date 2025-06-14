@@ -8,6 +8,8 @@ from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, 
 TEST_DOOR_ID = UUID("f47ac10b-58cc-4372-a567-0e02b2c3d483")
 TEST_USER_ID = UUID("f47ac10b-58cc-4372-a567-0e02b2c3d479")
 
+from tests.conftest import SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2
+
 class TestAccessSchedule:
     """Test cases for AccessSchedule value object"""
     
@@ -224,7 +226,7 @@ class TestDoor:
         )
         
         critical_door = Door(
-            id=2,
+            id=SAMPLE_DOOR_UUID_2,
             name="Critical Security Door",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -265,7 +267,7 @@ class TestDoor:
         )
         
         high_door = Door(
-            id=2,
+            id=SAMPLE_DOOR_UUID_2,
             name="High Security Door",
             location="Building A",
             door_type=DoorType.ENTRANCE,

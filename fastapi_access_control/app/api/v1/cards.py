@@ -2,9 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from typing import List
 from uuid import UUID
 from app.domain.entities.card import Card
-from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
-from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
-from app.shared.database import AsyncSessionLocal
 from app.application.use_cases.card_use_cases import (
     CreateCardUseCase, GetCardUseCase, GetCardByCardIdUseCase, GetUserCardsUseCase,
     UpdateCardUseCase, DeactivateCardUseCase, SuspendCardUseCase, ListCardsUseCase, DeleteCardUseCase
@@ -14,6 +11,10 @@ from app.api.schemas.card_schemas import (
 )
 from app.api.error_handlers import map_domain_error_to_http
 from app.api.dependencies.auth_dependencies import get_current_active_user
+from app.api.dependencies.repository_dependencies import get_card_repository, get_user_repository
+from app.ports.card_repository_port import CardRepositoryPort
+from app.ports.user_repository_port import UserRepositoryPort
+from app.config import get_settings
 import logging
 
 logger = logging.getLogger(__name__)
@@ -30,13 +31,6 @@ router = APIRouter(
     }
 )
 
-def get_card_repository():
-    """Dependency to get CardRepository instance"""
-    return SqlAlchemyCardRepository(session_factory=AsyncSessionLocal)
-
-def get_user_repository():
-    """Dependency to get UserRepository instance"""
-    return SqlAlchemyUserRepository(session_factory=AsyncSessionLocal)
 
 @router.post(
     "/",
@@ -83,8 +77,8 @@ def get_user_repository():
 )
 async def create_card(
     card_data: CreateCardRequest = Body(..., description="Card creation data"),
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
+    user_repository: UserRepositoryPort = Depends(get_user_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Create a new access card"""
@@ -118,7 +112,7 @@ async def create_card(
 )
 async def get_card(
     card_id: UUID,
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get a card by its database ID"""
@@ -141,7 +135,7 @@ async def get_card(
 )
 async def get_card_by_card_id(
     card_id: str,
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get a card by its physical card ID"""
@@ -161,7 +155,7 @@ async def get_card_by_card_id(
 )
 async def get_user_cards(
     user_id: UUID,
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get all cards for a user"""
@@ -181,8 +175,8 @@ async def get_user_cards(
 )
 async def list_cards(
     skip: int = Query(0, ge=0, description="Number of cards to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of cards to return"),
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    limit: int = Query(get_settings().DEFAULT_PAGE_SIZE, ge=1, le=get_settings().MAX_PAGE_SIZE, description="Maximum number of cards to return"),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """List cards with pagination"""
@@ -212,7 +206,7 @@ async def list_cards(
 async def update_card(
     card_id: UUID,
     card_data: UpdateCardRequest = Body(..., description="Card update data"),
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Update a card"""
@@ -242,7 +236,7 @@ async def update_card(
 )
 async def deactivate_card(
     card_id: UUID,
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Deactivate a card"""
@@ -267,7 +261,7 @@ async def deactivate_card(
 )
 async def suspend_card(
     card_id: UUID,
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Suspend a card"""
@@ -292,7 +286,7 @@ async def suspend_card(
 )
 async def delete_card(
     card_id: UUID,
-    card_repository: SqlAlchemyCardRepository = Depends(get_card_repository),
+    card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Delete a card"""

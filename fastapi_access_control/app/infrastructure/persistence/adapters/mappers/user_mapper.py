@@ -44,5 +44,5 @@ class UserMapper:
         model.full_name = user.full_name
         model.roles = [role.value for role in user.roles]
         model.is_active = user.status == UserStatus.ACTIVE
-        model.updated_at = datetime.now(timezone.utc)
+        model.updated_at = datetime.now()
         return model 

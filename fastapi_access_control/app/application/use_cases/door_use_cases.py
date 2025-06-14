@@ -2,15 +2,13 @@ from typing import Optional, List
 from datetime import datetime, timezone, UTC, time
 from ...domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
 from ...ports.door_repository_port import DoorRepositoryPort
-from ...domain.exceptions import DomainError
+from ...domain.exceptions import (
+    DomainError, DoorNotFoundError, EntityAlreadyExistsError
+)
 import logging
 from uuid import UUID, uuid4
 
 logger = logging.getLogger(__name__)
-
-class DoorNotFoundError(DomainError):
-    """Door not found error"""
-    pass
 
 class CreateDoorUseCase:
     """Use case for creating new doors"""
@@ -33,7 +31,7 @@ class CreateDoorUseCase:
         # Check if door name already exists
         existing_door = await self.door_repository.get_by_name(name)
         if existing_door:
-            raise DomainError(f"Door with name '{name}' already exists")
+            raise EntityAlreadyExistsError("Door", name)
         
         # Parse default schedule if provided
         default_schedule = None
@@ -79,7 +77,7 @@ class GetDoorUseCase:
         """Get door by ID"""
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         return door
 
 class GetDoorByNameUseCase:
@@ -92,7 +90,7 @@ class GetDoorByNameUseCase:
         """Get door by name"""
         door = await self.door_repository.get_by_name(name)
         if not door:
-            raise DoorNotFoundError(f"Door with name '{name}' not found")
+            raise DoorNotFoundError(name, f"Door with name '{name}' not found")
         return door
 
 class GetDoorsByLocationUseCase:
@@ -127,14 +125,14 @@ class UpdateDoorUseCase:
         # Get existing door
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         
         # Update fields if provided
         if name and name != door.name:
             # Check if new name already exists
             existing_door = await self.door_repository.get_by_name(name)
             if existing_door and existing_door.id != door_id:
-                raise DomainError(f"Door with name '{name}' already exists")
+                raise EntityAlreadyExistsError("Door", name)
             door.name = name
         
         if location:
@@ -183,7 +181,7 @@ class SetDoorStatusUseCase:
         # Get existing door
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         
         # Update status using domain logic
         if status == DoorStatus.ACTIVE.value:
@@ -243,7 +241,7 @@ class DeleteDoorUseCase:
         # Check if door exists
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         
         logger.info(f"Deleting door {door_id}")
         return await self.door_repository.delete(door_id)

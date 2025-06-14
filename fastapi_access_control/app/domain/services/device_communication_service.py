@@ -17,6 +17,7 @@ from app.domain.entities.device_message import (
     DoorAction
 )
 from app.infrastructure.mqtt.adapters.asyncio_mqtt_adapter import AiomqttAdapter
+from app.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -78,8 +79,10 @@ class DeviceCommunicationService:
             logger.error(f"Failed to send command to device {command.device_id}: {str(e)}")
             return False
     
-    async def send_unlock_command(self, device_id: str, duration: int = 5) -> bool:
+    async def send_unlock_command(self, device_id: str, duration: int = None) -> bool:
         """Send unlock command to specific device."""
+        if duration is None:
+            duration = get_settings().DEFAULT_UNLOCK_DURATION
         command = DoorCommand.create_unlock(device_id, duration)
         return await self.send_door_command(command)
     
@@ -241,8 +244,10 @@ class DeviceCommunicationService:
         """Get list of pending commands awaiting acknowledgment."""
         return self._pending_commands.copy()
     
-    def cleanup_expired_commands(self, max_age_seconds: int = 300):
+    def cleanup_expired_commands(self, max_age_seconds: int = None):
         """Remove commands that have been pending too long."""
+        if max_age_seconds is None:
+            max_age_seconds = get_settings().MQTT_COMMAND_CLEANUP_SECONDS
         current_time = datetime.now(timezone.utc)
         expired_commands = []
         

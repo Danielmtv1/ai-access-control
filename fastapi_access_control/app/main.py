@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import json
+import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -18,7 +20,7 @@ from app.shared.database import AsyncSessionLocal, engine
 from app.domain.exceptions import DomainError, RepositoryError, MqttAdapterError
 
 # Infrastructure imports
-from app.infrastructure.mqtt.adapters.asyncio_mqtt_adapter import AiomqttAdapter
+from app.infrastructure.mqtt.factory import MqttServiceFactory
 from app.infrastructure.persistence.adapters.sqlalchemy_mqtt_repository import SqlAlchemyMqttMessageRepository
 from app.infrastructure.observability.logging import configure_logging, get_logger
 from app.infrastructure.observability.metrics import (
@@ -34,6 +36,8 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.cards import router as cards_router
 from app.api.v1.doors import router as doors_router
 from app.api.v1.access import router as access_router
+from app.api.v1.permissions import router as permissions_router
+from app.api.v1.users import router as users_router
 from app.api.health import router as health_router
 
 # Domain services
@@ -64,54 +68,51 @@ class ApplicationState:
         """Initialize all application dependencies"""
         logger.info("Initializing application dependencies...")
         
-        # Database session factory
-        def db_session_factory():
-            return AsyncSessionLocal()
+        # Initialize core services in order
+        await self._initialize_database_services()
+        await self._initialize_mqtt_services()
+        await self._initialize_access_validation_services()
         
-        # Repository setup
-        mqtt_repository = SqlAlchemyMqttMessageRepository(
-            session_factory=db_session_factory
-        )
+        logger.info("Application dependencies initialized successfully")
+    
+    async def _initialize_database_services(self):
+        """Initialize database session factory and repositories"""
+        from app.api.dependencies.repository_dependencies import get_repository_container
         
-        # Domain service setup
-        self.mqtt_message_service = MqttMessageService(repository=mqtt_repository)
-        
-        # Set up device communication handler
-        self.mqtt_device_handler = MqttDeviceHandler(
-            device_communication_service=None,  # Will be set after MQTT adapter is created
-            access_validation_use_case=None,  # Will be set after MQTT adapter is created
-            mqtt_message_service=self.mqtt_message_service
-        )
+        # Get centralized repository container
+        self.repository_container = get_repository_container()
+        self.db_session_factory = self.repository_container.session_factory
+        self.mqtt_message_service = self.repository_container.get_mqtt_message_service()
+    
+    async def _initialize_mqtt_services(self):
+        """Initialize MQTT services using centralized factory pattern"""
+        logger.info("Initializing MQTT services using factory pattern")
         
         # Log MQTT configuration
-        logger.info("MQTT Configuration:", extra={
-            "host": self.settings.MQTT_HOST,
-            "port": self.settings.MQTT_PORT,
-            "use_tls": self.settings.USE_TLS,
-            "username": "configured" if self.settings.MQTT_USERNAME else "not configured",
-            "password": "configured" if self.settings.MQTT_PASSWORD else "not configured"
-        })
+        self._log_mqtt_configuration()
         
-        # MQTT adapter setup with device handler
-        self.mqtt_adapter = AiomqttAdapter(
-            message_handler=self.mqtt_device_handler.handle_message
+        # Create complete MQTT service stack using factory
+        (
+            self.mqtt_adapter,
+            self.device_communication_service,
+            self.mqtt_device_handler
+        ) = MqttServiceFactory.create_complete_mqtt_services(self.mqtt_message_service)
+        
+        logger.info(
+            "MQTT services initialized successfully with enhanced resilience patterns"
         )
-        
-        # Set up device communication service
-        self.device_communication_service = DeviceCommunicationService(self.mqtt_adapter)
-        
-        # Set up access validation use case with repositories
-        from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
-        from app.infrastructure.persistence.adapters.door_repository import SqlAlchemyDoorRepository
-        from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
-        from app.infrastructure.persistence.adapters.permission_repository import PermissionRepository
+    
+    async def _initialize_access_validation_services(self):
+        """Initialize access validation use case and update device handler"""
         from app.application.use_cases.access_use_cases import ValidateAccessUseCase
         
-        card_repository = SqlAlchemyCardRepository(db_session_factory)
-        door_repository = SqlAlchemyDoorRepository(db_session_factory)
-        user_repository = SqlAlchemyUserRepository(db_session_factory)
-        permission_repository = PermissionRepository(AsyncSessionLocal())
+        # Get repository instances from container
+        card_repository = self.repository_container.get_card_repository()
+        door_repository = self.repository_container.get_door_repository()
+        permission_repository = self.repository_container.get_permission_repository()
+        user_repository = self.repository_container.get_user_repository()
         
+        # Create access validation use case
         access_validation_use_case = ValidateAccessUseCase(
             card_repository=card_repository,
             door_repository=door_repository,
@@ -124,8 +125,16 @@ class ApplicationState:
         # Update device handler with complete dependencies
         self.mqtt_device_handler.device_service = self.device_communication_service
         self.mqtt_device_handler.access_use_case = access_validation_use_case
-        
-        logger.info("Application dependencies initialized successfully")
+    
+    def _log_mqtt_configuration(self):
+        """Log MQTT configuration details"""
+        logger.info("MQTT Configuration:", extra={
+            "host": self.settings.MQTT_HOST,
+            "port": self.settings.MQTT_PORT,
+            "use_tls": self.settings.USE_TLS,
+            "username": "configured" if self.settings.MQTT_USERNAME else "not configured",
+            "password": "configured" if self.settings.MQTT_PASSWORD else "not configured"
+        })
     
     async def start_background_tasks(self):
         """Start all background tasks"""
@@ -233,6 +242,13 @@ async def lifespan(app: FastAPI):
         # Shutdown
         await app_state.shutdown()
 
+class UUIDEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles UUID objects"""
+    def default(self, obj):
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        return super().default(obj)
+
 def create_application() -> FastAPI:
     """Factory function to create FastAPI application"""
     
@@ -248,6 +264,9 @@ def create_application() -> FastAPI:
         redoc_url=None,  # Disable default route
         openapi_url="/openapi.json"  # Keep OpenAPI route
     )
+    
+    # Configure custom JSON encoder for UUID handling
+    app.state.json_encoder = UUIDEncoder
     
     # Add security middleware
     add_security_middleware(app)
@@ -399,6 +418,8 @@ def setup_routers(app: FastAPI):
     app.include_router(cards_router, prefix="/api/v1", tags=["Cards"])
     app.include_router(doors_router, prefix="/api/v1", tags=["Doors"])
     app.include_router(access_router, prefix="/api/v1", tags=["Access Control"])
+    app.include_router(permissions_router, prefix="/api/v1", tags=["Permissions"])
+    app.include_router(users_router, prefix="/api/v1", tags=["Users"])
     
     # Root endpoint
     @app.get("/")

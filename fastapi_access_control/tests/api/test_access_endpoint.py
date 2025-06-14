@@ -114,8 +114,8 @@ class TestAccessEndpoint:
             card_type="employee",
             requires_pin=False,
             card_id="TEST123",
-            door_id=1,
-            user_id=1
+            door_id=SAMPLE_CARD_UUID,
+            user_id=SAMPLE_CARD_UUID
         )
         mock_use_case.execute.return_value = mock_result
         

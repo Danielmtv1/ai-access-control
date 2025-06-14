@@ -8,7 +8,7 @@ def test_mapper_to_domain():
     """Test conversion from infrastructure model to domain entity"""
     # Create test model
     model = MqttMessageModel(
-        id=1,
+        id=SAMPLE_CARD_UUID,
         topic="test/topic",
         message="test message",
         timestamp=datetime.now(timezone.utc)

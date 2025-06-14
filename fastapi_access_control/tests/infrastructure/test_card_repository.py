@@ -141,7 +141,7 @@ class TestSqlAlchemyCardRepository:
         card = Card(
             id=999,  # Non-existent ID
             card_id="CARD999",
-            user_id=1,
+            user_id=SAMPLE_CARD_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,

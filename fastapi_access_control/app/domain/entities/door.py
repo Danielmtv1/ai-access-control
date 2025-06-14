@@ -135,5 +135,3 @@ class Door:
         self.reset_failed_attempts()
         self.updated_at = datetime.now()
 
-# Import at the end to avoid circular imports
-from datetime import timedelta

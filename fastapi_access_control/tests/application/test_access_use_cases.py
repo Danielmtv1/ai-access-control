@@ -19,11 +19,15 @@ from app.api.schemas.access_schemas import AccessValidationResult
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.door import Door, DoorStatus, SecurityLevel, DoorType
 from app.domain.entities.user import User, Role, UserStatus
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2
 from app.domain.entities.permission import Permission, PermissionStatus
 from app.domain.services.device_communication_service import DeviceCommunicationService
 from app.domain.entities.device_message import DeviceAccessResponse, DoorAction
 from app.domain.exceptions import (
     EntityNotFoundError,
+    CardNotFoundError,
+    DoorNotFoundError,
+    UserNotFoundError,
     InvalidCardError,
     InvalidDoorError,
     AccessDeniedError
@@ -173,7 +177,7 @@ class TestValidateAccessUseCase:
         mock_card_repository.get_by_card_id.return_value = None
         
         # Act & Assert
-        with pytest.raises(EntityNotFoundError, match="Card TEST123 not found"):
+        with pytest.raises(CardNotFoundError, match="Card with identifier 'TEST123' not found"):
             await use_case.execute("TEST123", TEST_DOOR_ID_1)
     
     @pytest.mark.asyncio
@@ -196,7 +200,7 @@ class TestValidateAccessUseCase:
         mock_door_repository.get_by_id.return_value = None
         
         # Act & Assert
-        with pytest.raises(EntityNotFoundError, match="Door 1 not found"):
+        with pytest.raises(DoorNotFoundError, match="Door with identifier '1' not found"):
             await use_case.execute("TEST123", 1)
     
     @pytest.mark.asyncio
@@ -223,7 +227,7 @@ class TestValidateAccessUseCase:
         mock_user_repository.get_by_id.return_value = None
         
         # Act & Assert
-        with pytest.raises(EntityNotFoundError, match="User for card TEST123 not found"):
+        with pytest.raises(UserNotFoundError, match="User for card TEST123 not found"):
             await use_case.execute("TEST123", TEST_DOOR_ID_1)
     
     @pytest.mark.asyncio
@@ -694,7 +698,7 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
         
         response = call_args[0][1]
         assert response.access_granted is False
-        assert "Card INVALID123 not found" in response.reason
+        assert "Card with identifier 'INVALID123' not found" in response.reason
     
     @pytest.mark.asyncio
     async def test_no_device_id_no_mqtt_response(self, use_case_with_devices,

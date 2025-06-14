@@ -1,7 +1,7 @@
 """
 Domain entities for IoT device communication.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone, timezone
 from typing import Optional, Dict, Any
 from enum import Enum
@@ -98,12 +98,15 @@ class DoorCommand:
     message_id: str
     timestamp: datetime
     parameters: Dict[str, Any]
-    timeout: int = 30  # seconds
+    timeout: int = field(default_factory=lambda: __import__('app.config', fromlist=['get_settings']).get_settings().MQTT_COMMAND_TIMEOUT)
     requires_ack: bool = True
     
     @classmethod
-    def create_unlock(cls, device_id: str, duration: int = 5) -> 'DoorCommand':
+    def create_unlock(cls, device_id: str, duration: int = None) -> 'DoorCommand':
         """Create an unlock command."""
+        if duration is None:
+            from app.config import get_settings
+            duration = get_settings().DEFAULT_UNLOCK_DURATION
         return cls(
             command=DeviceCommandType.UNLOCK,
             device_id=device_id,

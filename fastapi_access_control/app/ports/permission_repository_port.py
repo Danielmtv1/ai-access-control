@@ -47,8 +47,29 @@ class PermissionRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def list_permissions(self, skip: int = 0, limit: int = 100) -> List[Permission]:
-        """List permissions with pagination"""
+    async def list_permissions(self, 
+                             user_id: Optional[UUID] = None,
+                             door_id: Optional[UUID] = None,
+                             card_id: Optional[UUID] = None,
+                             status: Optional[str] = None,
+                             created_by: Optional[UUID] = None,
+                             valid_only: Optional[bool] = None,
+                             expired_only: Optional[bool] = None,
+                             limit: int = 100,
+                             offset: int = 0) -> List[Permission]:
+        """List permissions with filters and pagination"""
+        pass
+    
+    @abstractmethod
+    async def count_permissions(self,
+                              user_id: Optional[UUID] = None,
+                              door_id: Optional[UUID] = None,
+                              card_id: Optional[UUID] = None,
+                              status: Optional[str] = None,
+                              created_by: Optional[UUID] = None,
+                              valid_only: Optional[bool] = None,
+                              expired_only: Optional[bool] = None) -> int:
+        """Count permissions matching filters"""
         pass
     
     @abstractmethod

@@ -10,6 +10,8 @@ from uuid import uuid4, UUID
 # Test UUIDs for consistent test data
 TEST_DOOR_ID_1 = UUID("f47ac10b-58cc-4372-a567-0e02b2c3d483")
 
+from tests.conftest import SAMPLE_CARD_UUID, SAMPLE_DOOR_UUID
+
 from app.domain.services.mqtt_device_handler import MqttDeviceHandler
 from app.domain.services.device_communication_service import DeviceCommunicationService
 from app.application.use_cases.access_use_cases import ValidateAccessUseCase
@@ -107,7 +109,7 @@ class TestMqttDeviceHandler:
             requires_pin=False,
             card_id="ABC123",
             door_id=TEST_DOOR_ID_1,
-            user_id=1
+            user_id=SAMPLE_CARD_UUID
         )
         
         await device_handler.handle_message(topic, payload)
@@ -145,7 +147,7 @@ class TestMqttDeviceHandler:
         payload = json.dumps({"card_id": "ABC123", "door_id": str(TEST_DOOR_ID_1)})
         
         # Mock successful parsing
-        device_request = DeviceAccessRequest.create("ABC123", 1, "door_lock_001")
+        device_request = DeviceAccessRequest.create("ABC123", TEST_DOOR_ID_1, "door_lock_001")
         mock_device_service.parse_device_request.return_value = device_request
         
         # Mock validation failure

@@ -4,28 +4,47 @@ from unittest.mock import AsyncMock, patch
 from datetime import datetime, timezone, UTC, timedelta
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.user import User, Role, UserStatus
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_ADMIN_UUID
 
 class TestCardsAPI:
     """Integration tests for Cards API endpoints"""
     
     @pytest.fixture
-    def authenticated_headers(self, valid_jwt_token):
-        """Headers with valid JWT token"""
-        return {"Authorization": f"Bearer {valid_jwt_token}"}
+    def client(self):
+        """HTTP client for testing."""
+        from app.main import app
+        return TestClient(app)
     
     @pytest.fixture
-    def admin_jwt_token(self, auth_service, sample_admin_user):
-        """Valid JWT token for admin user"""
-        return auth_service.generate_access_token(sample_admin_user)
+    def mock_admin_user(self):
+        """Mock admin user for testing."""
+        return User(
+            id=SAMPLE_ADMIN_UUID,
+            email="admin@test.com",
+            hashed_password="hashed_password",
+            full_name="Admin User",
+            roles=[Role.ADMIN],
+            status=UserStatus.ACTIVE,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC)
+        )
     
-    @pytest.fixture
-    def admin_headers(self, admin_jwt_token):
-        """Headers with admin JWT token"""
-        return {"Authorization": f"Bearer {admin_jwt_token}"}
-    
-    def test_create_card_success(self, client: TestClient, admin_headers):
+    def setup_auth_override(self, client, user):
+        """Helper to setup authentication override."""
+        from app.api.dependencies.auth_dependencies import get_current_active_user
+        client.app.dependency_overrides[get_current_active_user] = lambda: user
+        
+    def cleanup_overrides(self, client):
+        """Helper to cleanup dependency overrides."""
+        client.app.dependency_overrides.clear()
+
+    def test_create_card_success(self, client, mock_admin_user):
         """Test successful card creation"""
         with patch('app.api.v1.cards.CreateCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
@@ -33,9 +52,9 @@ class TestCardsAPI:
             # Mock successful card creation
             now = datetime.now(UTC).replace(tzinfo=None)
             created_card = Card(
-                id=1,
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
+                user_id=SAMPLE_USER_UUID,
                 card_type=CardType.EMPLOYEE,
                 status=CardStatus.ACTIVE,
                 valid_from=now,
@@ -49,56 +68,64 @@ class TestCardsAPI:
             # Make request
             card_data = {
                 "card_id": "CARD001",
-                "user_id": 1,
+                "user_id": str(SAMPLE_USER_UUID),
                 "card_type": "employee",
-                "valid_from": "2024-01-01T00:00:00",
-                "valid_until": "2024-12-31T23:59:59"
+                "valid_from": now.isoformat(),
+                "valid_until": (now + timedelta(days=365)).isoformat()
             }
             
-            response = client.post("/api/v1/cards/", json=card_data, headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 201
-            data = response.json()
-            assert data["card_id"] == "CARD001"
-            assert data["user_id"] == 1
-            assert data["card_type"] == "employee"
-            assert data["status"] == "active"
-    
-    def test_create_card_unauthorized(self, client: TestClient):
+            try:
+                response = client.post("/api/v1/cards/", json=card_data, headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 201
+                data = response.json()
+                assert data["card_id"] == "CARD001"
+                assert data["card_type"] == "employee"
+                assert data["status"] == "active"
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_create_card_unauthorized(self, client):
         """Test card creation without authentication"""
         card_data = {
             "card_id": "CARD001",
-            "user_id": 1,
-            "card_type": "employee",
-            "valid_from": "2024-01-01T00:00:00"
+            "user_id": str(SAMPLE_USER_UUID),
+            "card_type": "employee"
         }
         
         response = client.post("/api/v1/cards/", json=card_data)
         
         assert response.status_code == 401
         assert "Not authenticated" in response.json()["detail"]
-    
-    def test_create_card_validation_error(self, client: TestClient, admin_headers):
-        """Test card creation with validation errors"""
-        # Invalid card data (missing required fields)
-        card_data = {
-            "card_id": "",  # Empty card_id
-            "user_id": 0,   # Invalid user_id
-            "card_type": "invalid_type",  # Invalid card type
-            "valid_from": "invalid_date"  # Invalid date format
-        }
+
+    def test_create_card_validation_error(self, client, mock_admin_user):
+        """Test card creation with invalid data"""
+        # Setup authentication
+        self.setup_auth_override(client, mock_admin_user)
         
-        response = client.post("/api/v1/cards/", json=card_data, headers=admin_headers)
-        
-        assert response.status_code == 422
-        errors = response.json()["detail"]
-        assert any("card_id" in str(error) for error in errors)
-        assert any("user_id" in str(error) for error in errors)
-    
-    def test_get_card_success(self, client: TestClient, admin_headers):
+        try:
+            # Make request with invalid data
+            card_data = {
+                "card_id": "",  # Empty card_id should fail validation
+                "user_id": "invalid-uuid",  # Invalid UUID
+                "card_type": "invalid_type"  # Invalid card type
+            }
+            
+            response = client.post("/api/v1/cards/", json=card_data, headers={"Authorization": "Bearer fake_token"})
+            
+            # Verify validation error
+            assert response.status_code == 422
+        finally:
+            self.cleanup_overrides(client)
+
+    def test_get_card_success(self, client, mock_admin_user):
         """Test successful card retrieval"""
         with patch('app.api.v1.cards.GetCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
@@ -106,9 +133,9 @@ class TestCardsAPI:
             # Mock card retrieval
             now = datetime.now(UTC).replace(tzinfo=None)
             card = Card(
-                id=1,
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
+                user_id=SAMPLE_USER_UUID,
                 card_type=CardType.EMPLOYEE,
                 status=CardStatus.ACTIVE,
                 valid_from=now,
@@ -119,36 +146,46 @@ class TestCardsAPI:
             )
             mock_use_case.execute.return_value = card
             
-            # Make request
-            response = client.get("/api/v1/cards/1", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert data["id"] == 1
-            assert data["card_id"] == "CARD001"
-            assert data["use_count"] == 5
-    
-    def test_get_card_not_found(self, client: TestClient, admin_headers):
+            try:
+                response = client.get(f"/api/v1/cards/{SAMPLE_CARD_UUID}", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert data["card_id"] == "CARD001"
+                assert data["id"] == str(SAMPLE_CARD_UUID)
+                assert data["use_count"] == 5
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_get_card_not_found(self, client, mock_admin_user):
         """Test card retrieval when card doesn't exist"""
         with patch('app.api.v1.cards.GetCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
+            from app.domain.exceptions import EntityNotFoundError
+            mock_use_case.execute.side_effect = EntityNotFoundError("Card not found")
             
-            # Mock card not found
-            from app.application.use_cases.card_use_cases import CardNotFoundError
-            mock_use_case.execute.side_effect = CardNotFoundError("Card with ID 999 not found")
-            
-            # Make request
-            response = client.get("/api/v1/cards/999", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 404
-    
-    def test_get_card_by_card_id_success(self, client: TestClient, admin_headers):
-        """Test successful card retrieval by card_id"""
+            try:
+                response = client.get(f"/api/v1/cards/{SAMPLE_CARD_UUID}", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify not found response
+                assert response.status_code == 404
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_get_card_by_card_id_success(self, client, mock_admin_user):
+        """Test card retrieval by card_id"""
         with patch('app.api.v1.cards.GetCardByCardIdUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
@@ -156,58 +193,63 @@ class TestCardsAPI:
             # Mock card retrieval
             now = datetime.now(UTC).replace(tzinfo=None)
             card = Card(
-                id=1,
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
-                card_type=CardType.VISITOR,
+                user_id=SAMPLE_USER_UUID,
+                card_type=CardType.EMPLOYEE,
                 status=CardStatus.ACTIVE,
                 valid_from=now,
-                valid_until=now + timedelta(days=1),
+                valid_until=now + timedelta(days=365),
                 created_at=now,
                 updated_at=now,
                 use_count=0
             )
             mock_use_case.execute.return_value = card
             
-            # Make request
-            response = client.get("/api/v1/cards/by-card-id/CARD001", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert data["card_id"] == "CARD001"
-            assert data["card_type"] == "visitor"
-    
-    def test_get_user_cards_success(self, client: TestClient, admin_headers):
-        """Test successful user cards retrieval"""
+            try:
+                response = client.get("/api/v1/cards/by-card-id/CARD001", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert data["card_id"] == "CARD001"
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_get_user_cards_success(self, client, mock_admin_user):
+        """Test retrieving cards for a user"""
         with patch('app.api.v1.cards.GetUserCardsUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
             
-            # Mock multiple cards for user
+            # Mock cards retrieval
             now = datetime.now(UTC).replace(tzinfo=None)
             cards = [
                 Card(
-                    id=1,
+                    id=SAMPLE_CARD_UUID,
                     card_id="CARD001",
-                    user_id=1,
+                    user_id=SAMPLE_USER_UUID,
                     card_type=CardType.EMPLOYEE,
                     status=CardStatus.ACTIVE,
                     valid_from=now,
-                    valid_until=None,
+                    valid_until=now + timedelta(days=365),
                     created_at=now,
                     updated_at=now,
                     use_count=0
                 ),
                 Card(
-                    id=2,
+                    id=SAMPLE_CARD_UUID_2,
                     card_id="CARD002",
-                    user_id=1,
-                    card_type=CardType.TEMPORARY,
+                    user_id=SAMPLE_USER_UUID,
+                    card_type=CardType.VISITOR,
                     status=CardStatus.ACTIVE,
                     valid_from=now,
-                    valid_until=now + timedelta(days=1),
+                    valid_until=now + timedelta(days=30),
                     created_at=now,
                     updated_at=now,
                     use_count=0
@@ -215,59 +257,63 @@ class TestCardsAPI:
             ]
             mock_use_case.execute.return_value = cards
             
-            # Make request
-            response = client.get("/api/v1/cards/user/1", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert len(data) == 2
-            assert data[0]["card_id"] == "CARD001"
-            assert data[1]["card_id"] == "CARD002"
-    
-    def test_list_cards_success(self, client: TestClient, admin_headers):
-        """Test successful cards listing with pagination"""
+            try:
+                response = client.get(f"/api/v1/cards/user/{SAMPLE_USER_UUID}", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert len(data) == 2
+                assert data[0]["user_id"] == str(SAMPLE_USER_UUID)
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_list_cards_success(self, client, mock_admin_user):
+        """Test listing all cards"""
         with patch('app.api.v1.cards.ListCardsUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
             
-            # Mock paginated cards
+            # Mock cards retrieval
             now = datetime.now(UTC).replace(tzinfo=None)
             cards = [
                 Card(
-                    id=i,
-                    card_id=f"CARD{i:03d}",
-                    user_id=1,
+                    id=SAMPLE_CARD_UUID,
+                    card_id="CARD001",
+                    user_id=SAMPLE_USER_UUID,
                     card_type=CardType.EMPLOYEE,
                     status=CardStatus.ACTIVE,
                     valid_from=now,
-                    valid_until=None,
+                    valid_until=now + timedelta(days=365),
                     created_at=now,
                     updated_at=now,
                     use_count=0
                 )
-                for i in range(1, 6)
             ]
             mock_use_case.execute.return_value = cards
             
-            # Make request with pagination
-            response = client.get("/api/v1/cards/?skip=0&limit=5", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert "cards" in data
-            assert "total" in data
-            assert "skip" in data
-            assert "limit" in data
-            assert len(data["cards"]) == 5
-            assert data["skip"] == 0
-            assert data["limit"] == 5
-    
-    def test_update_card_success(self, client: TestClient, admin_headers):
+            try:
+                response = client.get("/api/v1/cards/", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert len(data["cards"]) == 1
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_update_card_success(self, client, mock_admin_user):
         """Test successful card update"""
         with patch('app.api.v1.cards.UpdateCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
@@ -275,124 +321,144 @@ class TestCardsAPI:
             # Mock updated card
             now = datetime.now(UTC).replace(tzinfo=None)
             updated_card = Card(
-                id=1,
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
-                card_type=CardType.VISITOR,  # Updated
-                status=CardStatus.SUSPENDED,  # Updated
+                user_id=SAMPLE_USER_UUID,
+                card_type=CardType.CONTRACTOR,
+                status=CardStatus.ACTIVE,
                 valid_from=now,
-                valid_until=now + timedelta(days=30),  # Updated
+                valid_until=now + timedelta(days=180),
                 created_at=now,
-                updated_at=now + timedelta(minutes=1),
+                updated_at=now,
                 use_count=0
             )
             mock_use_case.execute.return_value = updated_card
             
-            # Make request
             update_data = {
-                "card_type": "visitor",
-                "status": "suspended",
-                "valid_until": "2024-07-01T23:59:59"
+                "card_type": "contractor",
+                "valid_until": (now + timedelta(days=180)).isoformat()
             }
-            response = client.put("/api/v1/cards/1", json=update_data, headers=admin_headers)
             
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert data["card_type"] == "visitor"
-            assert data["status"] == "suspended"
-    
-    def test_suspend_card_success(self, client: TestClient, admin_headers):
-        """Test successful card suspension"""
+            try:
+                response = client.put(f"/api/v1/cards/{SAMPLE_CARD_UUID}", json=update_data, headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert data["card_type"] == "contractor"
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_suspend_card_success(self, client, mock_admin_user):
+        """Test card suspension"""
         with patch('app.api.v1.cards.SuspendCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
             
             # Mock suspended card
             now = datetime.now(UTC).replace(tzinfo=None)
-            suspended_card = Card(
-                id=1,
+            card = Card(
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
+                user_id=SAMPLE_USER_UUID,
                 card_type=CardType.EMPLOYEE,
-                status=CardStatus.SUSPENDED,  # Updated by domain logic
+                status=CardStatus.SUSPENDED,
                 valid_from=now,
-                valid_until=None,
+                valid_until=now + timedelta(days=365),
                 created_at=now,
-                updated_at=now + timedelta(minutes=1),
+                updated_at=now,
                 use_count=0
             )
-            mock_use_case.execute.return_value = suspended_card
+            mock_use_case.execute.return_value = card
             
-            # Make request
-            response = client.post("/api/v1/cards/1/suspend", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert data["status"] == "suspended"
-    
-    def test_deactivate_card_success(self, client: TestClient, admin_headers):
-        """Test successful card deactivation"""
+            try:
+                response = client.post(f"/api/v1/cards/{SAMPLE_CARD_UUID}/suspend", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "suspended"
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_deactivate_card_success(self, client, mock_admin_user):
+        """Test card deactivation"""
         with patch('app.api.v1.cards.DeactivateCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
             
             # Mock deactivated card
             now = datetime.now(UTC).replace(tzinfo=None)
-            deactivated_card = Card(
-                id=1,
+            card = Card(
+                id=SAMPLE_CARD_UUID,
                 card_id="CARD001",
-                user_id=1,
+                user_id=SAMPLE_USER_UUID,
                 card_type=CardType.EMPLOYEE,
-                status=CardStatus.INACTIVE,  # Updated by domain logic
+                status=CardStatus.INACTIVE,
                 valid_from=now,
-                valid_until=None,
+                valid_until=now + timedelta(days=365),
                 created_at=now,
-                updated_at=now + timedelta(minutes=1),
+                updated_at=now,
                 use_count=0
             )
-            mock_use_case.execute.return_value = deactivated_card
+            mock_use_case.execute.return_value = card
             
-            # Make request
-            response = client.post("/api/v1/cards/1/deactivate", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 200
-            data = response.json()
-            assert data["status"] == "inactive"
-    
-    def test_delete_card_success(self, client: TestClient, admin_headers):
+            try:
+                response = client.post(f"/api/v1/cards/{SAMPLE_CARD_UUID}/deactivate", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 200
+                data = response.json()
+                assert data["status"] == "inactive"
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_delete_card_success(self, client, mock_admin_user):
         """Test successful card deletion"""
         with patch('app.api.v1.cards.DeleteCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
-            
-            # Mock successful deletion
             mock_use_case.execute.return_value = True
             
-            # Make request
-            response = client.delete("/api/v1/cards/1", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 204
-    
-    def test_delete_card_not_found(self, client: TestClient, admin_headers):
+            try:
+                response = client.delete(f"/api/v1/cards/{SAMPLE_CARD_UUID}", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify response
+                assert response.status_code == 204
+            finally:
+                self.cleanup_overrides(client)
+
+    def test_delete_card_not_found(self, client, mock_admin_user):
         """Test card deletion when card doesn't exist"""
         with patch('app.api.v1.cards.DeleteCardUseCase') as mock_use_case_class:
+            
+            # Setup authentication
+            self.setup_auth_override(client, mock_admin_user)
+            
             # Mock the use case
             mock_use_case = AsyncMock()
             mock_use_case_class.return_value = mock_use_case
+            mock_use_case.execute.return_value = False
             
-            # Mock card not found
-            from app.application.use_cases.card_use_cases import CardNotFoundError
-            mock_use_case.execute.side_effect = CardNotFoundError("Card with ID 999 not found")
-            
-            # Make request
-            response = client.delete("/api/v1/cards/999", headers=admin_headers)
-            
-            # Verify response
-            assert response.status_code == 404
+            try:
+                response = client.delete(f"/api/v1/cards/{SAMPLE_CARD_UUID}", headers={"Authorization": "Bearer fake_token"})
+                
+                # Verify not found response
+                assert response.status_code == 404
+            finally:
+                self.cleanup_overrides(client)

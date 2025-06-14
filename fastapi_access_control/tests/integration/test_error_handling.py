@@ -14,10 +14,10 @@ from app.infrastructure.database.models.user import UserModel
 from app.infrastructure.database.models.card import CardModel
 from app.infrastructure.database.models.door import DoorModel
 from uuid import UUID
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_DOOR_UUID
 
 class TestErrorHandling:
     """Integration tests for error handling scenarios."""
-    TEST_DOOR_ID = UUID("da751b1d-2e7b-402c-b7ad-6f50c8cb6fe5")
     @pytest.fixture
     async def client(self):
         """HTTP client for testing."""
@@ -43,7 +43,7 @@ class TestErrorHandling:
             
             response = await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": "TEST123", "door_id": self.TEST_DOOR_ID}
+                json={"card_id": "TEST123", "door_id": str(SAMPLE_DOOR_UUID)}
             )
             
             # Should return 500 internal server error
@@ -67,7 +67,7 @@ class TestErrorHandling:
         
         response = await client.post(
             "/api/v1/access/validate",
-            json={"card_id": large_card_id, "door_id": self.TEST_DOOR_ID}
+            json={"card_id": large_card_id, "door_id": str(SAMPLE_DOOR_UUID)}
         )
         
         # Should be rejected due to validation
@@ -87,7 +87,7 @@ class TestErrorHandling:
         for card_id in special_chars_cards:
             response = await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": card_id, "door_id": self.TEST_DOOR_ID}
+                json={"card_id": card_id, "door_id": str(SAMPLE_DOOR_UUID)}
             )
             
             # Should return 404 (card not found) or 422 (validation error)
@@ -107,7 +107,7 @@ class TestErrorHandling:
         for injection_attempt in sql_injection_attempts:
             response = await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": injection_attempt, "door_id": self.TEST_DOOR_ID}
+                json={"card_id": injection_attempt, "door_id": str(SAMPLE_DOOR_UUID)}
             )
             
             # Should safely return 404 (not found) without executing injection
@@ -161,7 +161,7 @@ class TestErrorHandling:
         async def validate_access():
             return await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": "CONCURRENT001", "door_id": door.id}
+                json={"card_id": "CONCURRENT001", "door_id": str(door.id)}
             )
         
         # Execute 10 concurrent requests
@@ -179,7 +179,7 @@ class TestErrorHandling:
         """Test API response when Content-Type header is missing."""
         response = await client.post(
             "/api/v1/access/validate",
-            content=f'{"card_id": "TEST123", "door_id": {self.TEST_DOOR_ID}}'
+            content=f'{"card_id": "TEST123", "door_id": "{SAMPLE_DOOR_UUID}"}'
             # No Content-Type header
         )
         
@@ -196,7 +196,7 @@ class TestErrorHandling:
         # Test PUT (should be 405 Method Not Allowed)
         response = await client.put(
             "/api/v1/access/validate",
-            json={"card_id": "TEST123", "door_id": {self.TEST_DOOR_ID}}
+            json={"card_id": "TEST123", "door_id": str(SAMPLE_DOOR_UUID)}
         )
         assert response.status_code == 405
         
@@ -206,49 +206,49 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_extremely_large_door_id(self, client: AsyncClient):
-        """Test handling of extremely large door IDs."""
-        large_door_id = 2**63 - 1  # Maximum 64-bit integer
+        """Test handling of invalid UUID format for door IDs."""
+        invalid_door_uuid = "invalid-uuid-format"
         
         response = await client.post(
             "/api/v1/access/validate",
-            json={"card_id": "TEST123", "door_id": large_door_id}
+            json={"card_id": "TEST123", "door_id": invalid_door_uuid}
         )
         
-        # Should return 404 (door not found) not 500 (overflow error)
-        assert response.status_code == 404
+        # Should return 422 (validation error) for invalid UUID format
+        assert response.status_code == 422
     
     @pytest.mark.asyncio
     async def test_negative_door_id(self, client: AsyncClient):
-        """Test handling of negative door IDs."""
+        """Test handling of invalid UUID format for door IDs."""
         response = await client.post(
             "/api/v1/access/validate",
-            json={"card_id": "TEST123", "door_id": -1}
+            json={"card_id": "TEST123", "door_id": "negative-invalid"}
         )
         
-        # Should be rejected by validation
+        # Should be rejected by UUID validation
         assert response.status_code == 422
     
     @pytest.mark.asyncio
     async def test_zero_door_id(self, client: AsyncClient):
-        """Test handling of zero door ID."""
+        """Test handling of nil UUID for door ID."""
         response = await client.post(
             "/api/v1/access/validate",
-            json={"card_id": "TEST123", "door_id": 0}
+            json={"card_id": "TEST123", "door_id": "00000000-0000-0000-0000-000000000000"}
         )
         
-        # Should be rejected by validation (door_id must be > 0)
-        assert response.status_code == 422
+        # Should return 404 (door not found) for nil UUID
+        assert response.status_code == 404
     
     @pytest.mark.asyncio
     async def test_float_door_id(self, client: AsyncClient):
-        """Test handling of float door IDs."""
+        """Test handling of invalid UUID format for door IDs."""
         response = await client.post(
             "/api/v1/access/validate",
-            json={f'"card_id": "TEST123", "door_id": {self.TEST_DOOR_ID}.5'}
+            json={"card_id": "TEST123", "door_id": "invalid.5"}
         )
         
-        # Should be rejected by validation or converted to int
-        assert response.status_code in [404, 422]  # Either validation error or not found
+        # Should be rejected by UUID validation
+        assert response.status_code == 422
     
     @pytest.mark.asyncio
     async def test_null_values_in_request(self, client: AsyncClient):
@@ -256,7 +256,7 @@ class TestErrorHandling:
         # Null card_id
         response = await client.post(
             "/api/v1/access/validate",
-            json={"card_id": None, "door_id": {self.TEST_DOOR_ID}}
+            json={"card_id": None, "door_id": str(SAMPLE_DOOR_UUID)}
         )
         assert response.status_code == 422
         
@@ -280,7 +280,7 @@ class TestErrorHandling:
         for card_id in unicode_card_ids:
             response = await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": card_id, "door_id": {self.TEST_DOOR_ID}}
+                json={"card_id": card_id, "door_id": str(SAMPLE_DOOR_UUID)}
             )
             
             # Should handle Unicode gracefully
@@ -298,7 +298,7 @@ class TestErrorHandling:
             
             response = await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": "TEST123", "door_id": {self.TEST_DOOR_ID}}
+                json={"card_id": "TEST123", "door_id": str(SAMPLE_DOOR_UUID)}
             )
             
             # Should return 500 internal server error
@@ -331,7 +331,7 @@ class TestErrorHandling:
         for i in range(50):
             response = await client.post(
                 "/api/v1/access/validate",
-                json={"card_id": f"RAPID{i:03d}", "door_id": {self.TEST_DOOR_ID}}
+                json={"card_id": f"RAPID{i:03d}", "door_id": str(SAMPLE_DOOR_UUID)}
             )
             responses.append(response)
         

@@ -59,5 +59,5 @@ class PermissionMapper:
         model.pin_required = permission.pin_required
         model.created_by = permission.created_by
         model.last_used = permission.last_used
-        model.updated_at = datetime.now(timezone.utc)
+        model.updated_at = datetime.now()
         return model
