@@ -1,7 +1,11 @@
-.PHONY: help build up down ps logs clean db-migrate db-rollback test test-all test-unit test-integration test-coverage
+.PHONY: help build up down ps logs clean db-migrate db-rollback test test-all test-unit test-integration test-coverage zip
 
 # Variables
 DC = docker-compose -f docker-compose.yml
+
+zip:
+	git archive --format=zip --output=customer_behavior_$(shell git describe --tags --always --dirty).zip HEAD
+
 
 # Main commands
 up:
@@ -35,10 +39,9 @@ db-rollback:
 
 # Testing commands
 test:
-	$(DC) --profile test run --rm test pytest tests/domain/ tests/application/ -v --ignore=tests/test_asyncio_mqtt_adapter.py --ignore=tests/test_sqlalchemy_mqtt_repository.py
-
+	$(DC) --profile test run --rm test pytest tests/domain/ tests/application/ -v
 test-all:
-	$(DC) --profile test run --rm test pytest tests/domain/ tests/application/ tests/integration/ -v --ignore=tests/test_asyncio_mqtt_adapter.py --ignore=tests/test_sqlalchemy_mqtt_repository.py
+	$(DC) --profile test run --rm test pytest tests/domain/ tests/application/ tests/integration/ -v 
 
 test-unit:
 	$(DC) --profile test run --rm test pytest tests/domain/ tests/application/ -v

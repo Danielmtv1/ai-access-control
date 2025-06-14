@@ -3,10 +3,11 @@ Tests for AuthService domain service
 """
 import pytest
 import jwt
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timezone, UTC, timedelta
 from uuid import UUID, uuid4
 
 from app.domain.entities.user import User, Role, UserStatus
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2
 from app.domain.services.auth_service import AuthService
 from app.domain.value_objects.auth import UserClaims, TokenPair
 
@@ -179,7 +180,7 @@ class TestAuthService:
         user_id = uuid4()
         
         # Create an expired token manually
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         payload = {
             "sub": str(user_id),
             "email": "test@example.com",
@@ -258,7 +259,7 @@ class TestAuthService:
         auth_service = AuthService()
         
         # Create token with missing required fields
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         payload = {
             "sub": str(uuid4()),
             "iat": now,

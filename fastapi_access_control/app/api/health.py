@@ -3,8 +3,10 @@ from pydantic import BaseModel
 from typing import Dict, Any
 import asyncio
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
+from sqlalchemy import text
+from app.infrastructure.mqtt.adapters.asyncio_mqtt_adapter import AiomqttAdapter
 from app.infrastructure.observability.metrics import (
     mqtt_connection_status, 
     db_connections,
@@ -31,7 +33,7 @@ async def check_database() -> DetailedHealthCheck:
     
     try:
         async with AsyncSessionLocal() as session:
-            await session.execute("SELECT 1")
+            await session.execute(text("SELECT 1"))
             
         response_time = (time.time() - start_time) * 1000
         
@@ -56,9 +58,11 @@ async def check_mqtt() -> DetailedHealthCheck:
     start_time = time.time()
     
     try:
-        # Check connection status from metrics
-        connection_value = mqtt_connection_status._value._value
-        is_connected = connection_value == 1
+        try:
+            connection_value = mqtt_connection_status._value._value
+            is_connected = connection_value == 1
+        except (AttributeError, TypeError):
+            is_connected = False
         
         response_time = (time.time() - start_time) * 1000
         
@@ -67,7 +71,7 @@ async def check_mqtt() -> DetailedHealthCheck:
             response_time_ms=response_time,
             details={
                 "connected": is_connected,
-                "broker": "mqtt:1883"
+                "broker": "hivemq.cloud:8883"
             }
         )
     except Exception as e:
@@ -75,7 +79,11 @@ async def check_mqtt() -> DetailedHealthCheck:
         return DetailedHealthCheck(
             status="unhealthy",
             response_time_ms=response_time, 
-            details={"error": str(e)}
+            details={
+                "connected": False,
+                "broker": "hivemq.cloud:8883",
+                "error": str(e)
+            }
         )
 
 @router.get("/health", response_model=HealthStatus)
@@ -83,7 +91,7 @@ async def health_check():
     """Basic health check endpoint"""
     return HealthStatus(
         status="healthy",
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         version="1.0.0",
         checks={}
     )
@@ -109,7 +117,7 @@ async def detailed_health_check():
     
     return HealthStatus(
         status=overall_status,
-        timestamp=datetime.utcnow(),
+        timestamp=datetime.now(timezone.utc),
         version="1.0.0",
         checks={
             "database": db_check.dict() if hasattr(db_check, 'dict') else {"status": "error"},

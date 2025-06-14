@@ -1,15 +1,14 @@
 from typing import Optional, List
-from datetime import datetime, UTC, time
+from datetime import datetime, timezone, UTC, time
 from ...domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
 from ...ports.door_repository_port import DoorRepositoryPort
-from ...domain.exceptions import DomainError
+from ...domain.exceptions import (
+    DomainError, DoorNotFoundError, EntityAlreadyExistsError
+)
 import logging
+from uuid import UUID, uuid4
 
 logger = logging.getLogger(__name__)
-
-class DoorNotFoundError(DomainError):
-    """Door not found error"""
-    pass
 
 class CreateDoorUseCase:
     """Use case for creating new doors"""
@@ -32,7 +31,7 @@ class CreateDoorUseCase:
         # Check if door name already exists
         existing_door = await self.door_repository.get_by_name(name)
         if existing_door:
-            raise DomainError(f"Door with name '{name}' already exists")
+            raise EntityAlreadyExistsError("Door", name)
         
         # Parse default schedule if provided
         default_schedule = None
@@ -49,7 +48,7 @@ class CreateDoorUseCase:
         # Create door entity
         now = datetime.now(UTC).replace(tzinfo=None)
         door = Door(
-            id=0,  # Will be set by database
+            id=uuid4(),  # Will be set by database
             name=name,
             location=location,
             description=description,
@@ -74,11 +73,11 @@ class GetDoorUseCase:
     def __init__(self, door_repository: DoorRepositoryPort):
         self.door_repository = door_repository
     
-    async def execute(self, door_id: int) -> Door:
+    async def execute(self, door_id: UUID) -> Door:
         """Get door by ID"""
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         return door
 
 class GetDoorByNameUseCase:
@@ -91,7 +90,7 @@ class GetDoorByNameUseCase:
         """Get door by name"""
         door = await self.door_repository.get_by_name(name)
         if not door:
-            raise DoorNotFoundError(f"Door with name '{name}' not found")
+            raise DoorNotFoundError(name, f"Door with name '{name}' not found")
         return door
 
 class GetDoorsByLocationUseCase:
@@ -111,7 +110,7 @@ class UpdateDoorUseCase:
         self.door_repository = door_repository
     
     async def execute(self, 
-                     door_id: int,
+                     door_id: UUID,
                      name: Optional[str] = None,
                      location: Optional[str] = None,
                      description: Optional[str] = None,
@@ -126,14 +125,14 @@ class UpdateDoorUseCase:
         # Get existing door
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         
         # Update fields if provided
         if name and name != door.name:
             # Check if new name already exists
             existing_door = await self.door_repository.get_by_name(name)
             if existing_door and existing_door.id != door_id:
-                raise DomainError(f"Door with name '{name}' already exists")
+                raise EntityAlreadyExistsError("Door", name)
             door.name = name
         
         if location:
@@ -176,13 +175,13 @@ class SetDoorStatusUseCase:
     def __init__(self, door_repository: DoorRepositoryPort):
         self.door_repository = door_repository
     
-    async def execute(self, door_id: int, status: str) -> Door:
+    async def execute(self, door_id: UUID, status: str) -> Door:
         """Set door status"""
         
         # Get existing door
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         
         # Update status using domain logic
         if status == DoorStatus.ACTIVE.value:
@@ -236,13 +235,13 @@ class DeleteDoorUseCase:
     def __init__(self, door_repository: DoorRepositoryPort):
         self.door_repository = door_repository
     
-    async def execute(self, door_id: int) -> bool:
+    async def execute(self, door_id: UUID) -> bool:
         """Delete door"""
         
         # Check if door exists
         door = await self.door_repository.get_by_id(door_id)
         if not door:
-            raise DoorNotFoundError(f"Door with ID {door_id} not found")
+            raise DoorNotFoundError(str(door_id))
         
         logger.info(f"Deleting door {door_id}")
         return await self.door_repository.delete(door_id)

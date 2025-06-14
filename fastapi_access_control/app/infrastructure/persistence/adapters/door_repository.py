@@ -8,7 +8,7 @@ from app.infrastructure.persistence.adapters.mappers.door_mapper import DoorMapp
 from sqlalchemy.exc import SQLAlchemyError
 import logging
 from app.domain.exceptions import RepositoryError
-
+from uuid import UUID
 logger = logging.getLogger(__name__)
 
 class SqlAlchemyDoorRepository(DoorRepositoryPort):
@@ -34,7 +34,7 @@ class SqlAlchemyDoorRepository(DoorRepositoryPort):
                 logger.error(f"Database error creating door: {e}")
                 raise RepositoryError(f"Error creating door: {e}") from e
     
-    async def get_by_id(self, door_id: int) -> Optional[Door]:
+    async def get_by_id(self, door_id: UUID) -> Optional[Door]:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -94,7 +94,7 @@ class SqlAlchemyDoorRepository(DoorRepositoryPort):
                 logger.error(f"Database error updating door: {e}")
                 raise RepositoryError(f"Error updating door: {e}") from e
     
-    async def delete(self, door_id: int) -> bool:
+    async def delete(self, door_id: UUID) -> bool:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from typing import Optional
+from uuid import UUID
 
 @dataclass(frozen=True)
 class MqttMessage:
@@ -8,7 +9,7 @@ class MqttMessage:
     topic: str
     message: str
     timestamp: datetime
-    id: Optional[int] = None
+    id: Optional[UUID] = None
     
     def __post_init__(self):
         """Validate business rules after initialization"""

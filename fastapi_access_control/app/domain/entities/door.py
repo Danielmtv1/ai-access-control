@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime, time
+from datetime import datetime, timezone, time, timedelta
 from enum import Enum
+from uuid import UUID
 
 class SecurityLevel(Enum):
     LOW = "low"
@@ -43,7 +44,7 @@ class AccessSchedule:
 @dataclass
 class Door:
     """Domain entity for Door - Clean domain logic"""
-    id: int
+    id: UUID
     name: str
     location: str
     door_type: DoorType
@@ -91,7 +92,7 @@ class Door:
         """Business logic: Critical security level requires master card"""
         return self.security_level == SecurityLevel.CRITICAL
     
-    def record_successful_access(self, user_id: int) -> None:
+    def record_successful_access(self, user_id: UUID) -> None:
         """Business logic: Record successful access"""
         self.last_access = datetime.now()
         self.failed_attempts = 0
@@ -134,5 +135,3 @@ class Door:
         self.reset_failed_attempts()
         self.updated_at = datetime.now()
 
-# Import at the end to avoid circular imports
-from datetime import timedelta

@@ -1,6 +1,6 @@
 import pytest
 import dataclasses
-from datetime import datetime
+from datetime import datetime, timezone
 from app.domain.entities.mqtt_message import MqttMessage
 
 def test_mqtt_message_creation():

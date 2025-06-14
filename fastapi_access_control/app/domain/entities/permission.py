@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional, List
-from datetime import datetime, time
+from datetime import datetime, timezone, time
 from enum import Enum
-
+from uuid import UUID
 class PermissionStatus(Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
@@ -12,15 +12,15 @@ class PermissionStatus(Enum):
 @dataclass
 class Permission:
     """Domain entity for Permission - Links users/cards to doors with schedules"""
-    id: int
-    user_id: int
-    door_id: int
+    id: UUID
+    user_id: UUID
+    door_id: UUID
     status: PermissionStatus
     valid_from: datetime
-    created_by: int  # User who created this permission
+    created_by: UUID  # User who created this permission
     created_at: datetime
     updated_at: datetime
-    card_id: Optional[int] = None  # Optional: permission can be user-based or card-based
+    card_id: Optional[UUID] = None  # Optional: permission can be user-based or card-based
     valid_until: Optional[datetime] = None
     access_schedule: Optional[str] = None  # JSON string with schedule data
     pin_required: bool = False
@@ -46,11 +46,11 @@ class Permission:
             return False
         return datetime.now() > self.valid_until
     
-    def can_access_door(self, door_id: int) -> bool:
+    def can_access_door(self, door_id: UUID) -> bool:
         """Business logic: Check if this permission allows access to specific door"""
         return self.is_active() and self.door_id == door_id
     
-    def can_access_with_card(self, card_id: int) -> bool:
+    def can_access_with_card(self, card_id: UUID) -> bool:
         """Business logic: Check if this permission allows access with specific card"""
         if not self.is_active():
             return False
