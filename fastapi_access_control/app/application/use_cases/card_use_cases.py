@@ -26,7 +26,16 @@ class CreateCardUseCase:
                      card_type: str,
                      valid_from: datetime,
                      valid_until: Optional[datetime] = None) -> Card:
-        """Create new card"""
+        """
+                     Creates a new card for a user after verifying user existence and card ID uniqueness.
+                     
+                     Raises:
+                         UserNotFoundError: If the specified user does not exist.
+                         EntityAlreadyExistsError: If a card with the given card ID already exists.
+                     
+                     Returns:
+                         The newly created Card instance.
+                     """
         
         # Check if user exists
         user = await self.user_repository.get_by_id(user_id)
@@ -63,7 +72,18 @@ class GetCardUseCase:
         self.card_repository = card_repository
     
     async def execute(self, card_id: UUID) -> Card:
-        """Get card by ID"""
+        """
+        Retrieves a card by its unique identifier.
+        
+        Args:
+            card_id: The UUID of the card to retrieve.
+        
+        Returns:
+            The card associated with the given UUID.
+        
+        Raises:
+            CardNotFoundError: If no card exists with the specified UUID.
+        """
         card = await self.card_repository.get_by_id(card_id)
         if not card:
             raise CardNotFoundError(str(card_id))
@@ -76,7 +96,18 @@ class GetCardByCardIdUseCase:
         self.card_repository = card_repository
     
     async def execute(self, card_id: str) -> Card:
-        """Get card by physical card ID"""
+        """
+        Retrieves a card by its physical card ID.
+        
+        Args:
+            card_id: The physical card ID as a string.
+        
+        Returns:
+            The card associated with the given card ID.
+        
+        Raises:
+            CardNotFoundError: If no card with the specified card ID exists.
+        """
         card = await self.card_repository.get_by_card_id(card_id)
         if not card:
             raise CardNotFoundError(card_id)
@@ -103,7 +134,23 @@ class UpdateCardUseCase:
                      card_type: Optional[str] = None,
                      status: Optional[str] = None,
                      valid_until: Optional[datetime] = None) -> Card:
-        """Update card"""
+        """
+                     Updates an existing card's type, status, or validity end date.
+                     
+                     Retrieves the card by its UUID and applies any provided updates to the card type, status, or valid_until fields. Converts valid_until to a timezone-naive datetime if necessary and updates the card's updated_at timestamp.
+                     
+                     Args:
+                         card_id: The UUID of the card to update.
+                         card_type: Optional new card type.
+                         status: Optional new card status.
+                         valid_until: Optional new validity end date.
+                     
+                     Returns:
+                         The updated Card instance.
+                     
+                     Raises:
+                         CardNotFoundError: If no card with the given UUID exists.
+                     """
         
         # Get existing card
         card = await self.card_repository.get_by_id(card_id)
@@ -134,7 +181,18 @@ class DeactivateCardUseCase:
         self.card_repository = card_repository
     
     async def execute(self, card_id: UUID) -> Card:
-        """Deactivate card"""
+        """
+        Deactivates a card by setting its status to inactive.
+        
+        Args:
+        	card_id: The UUID of the card to deactivate.
+        
+        Returns:
+        	The updated Card object with status set to inactive.
+        
+        Raises:
+        	CardNotFoundError: If no card exists with the given UUID.
+        """
         
         # Get existing card
         card = await self.card_repository.get_by_id(card_id)
@@ -155,7 +213,15 @@ class SuspendCardUseCase:
         self.card_repository = card_repository
     
     async def execute(self, card_id: UUID) -> Card:
-        """Suspend card"""
+        """
+        Suspends a card identified by its UUID.
+        
+        Raises:
+            CardNotFoundError: If no card with the given UUID exists.
+        
+        Returns:
+            The updated Card object after suspension.
+        """
         
         # Get existing card
         card = await self.card_repository.get_by_id(card_id)
@@ -185,7 +251,15 @@ class DeleteCardUseCase:
         self.card_repository = card_repository
     
     async def execute(self, card_id: UUID) -> bool:
-        """Delete card"""
+        """
+        Deletes a card by its UUID.
+        
+        Raises:
+            CardNotFoundError: If the card with the specified UUID does not exist.
+        
+        Returns:
+            True if the card was successfully deleted, False otherwise.
+        """
         
         # Check if card exists
         card = await self.card_repository.get_by_id(card_id)

@@ -26,7 +26,7 @@ class TestMqttMessageService:
     
     @pytest.mark.asyncio
     async def test_save_message(self, mqtt_service, mock_repository):
-        """Test saving MQTT message"""
+        """Tests that saving an MQTT message via the service returns the saved message and calls the repository's save method with the correct arguments."""
         # Create test message
         message = MqttMessage(
             topic="test/topic",
@@ -47,7 +47,9 @@ class TestMqttMessageService:
     
     @pytest.mark.asyncio
     async def test_save_message_repository_error(self, mqtt_service, mock_repository):
-        """Test saving MQTT message with repository error"""
+        """
+        Tests that saving an MQTT message raises a RepositoryError when the repository save operation fails.
+        """
         message = MqttMessage(
             topic="test/topic",
             message="test payload",
@@ -66,7 +68,11 @@ class TestMqttMessageService:
     
     @pytest.mark.asyncio
     async def test_get_all_messages(self, mqtt_service, mock_repository):
-        """Test getting all messages"""
+        """
+        Tests that all MQTT messages are retrieved successfully from the service.
+        
+        Verifies that the service returns the complete list of messages provided by the repository and that the repository's retrieval method is called once.
+        """
         messages = [
             MqttMessage(
                 topic="topic1",
@@ -106,7 +112,9 @@ class TestMqttMessageService:
     
     @pytest.mark.asyncio
     async def test_get_message_by_id(self, mqtt_service, mock_repository):
-        """Test getting message by ID"""
+        """
+        Tests that retrieving a message by its ID returns the expected message from the service.
+        """
         message_id = 123
         message = MqttMessage(
             topic="test/topic",
@@ -156,7 +164,11 @@ class TestMqttMessageService:
     
     @pytest.mark.asyncio
     async def test_get_messages_by_topic(self, mqtt_service, mock_repository):
-        """Test getting messages by topic"""
+        """
+        Tests that messages can be retrieved by topic using the service.
+        
+        Verifies that the service returns the expected list of messages for a given topic and that the repository's `get_by_topic` method is called with the correct argument.
+        """
         topic = "test/topic"
         messages = [
             MqttMessage(
@@ -242,7 +254,9 @@ class TestMqttMessageService:
     @pytest.mark.asyncio
     @patch('app.domain.entities.mqtt_message.MqttMessage.create')
     async def test_process_mqtt_message_save_error(self, mock_create, mqtt_service, mock_repository):
-        """Test processing MQTT message with save error"""
+        """
+        Tests that processing an MQTT message raises a RepositoryError if saving the message fails.
+        """
         topic = "test/topic"
         message_content = "test message"
         

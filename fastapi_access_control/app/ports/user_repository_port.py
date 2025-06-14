@@ -8,12 +8,28 @@ class UserRepositoryPort(ABC):
     
     @abstractmethod
     async def create(self, user: User) -> User:
-        """Create a new user"""
+        """
+        Asynchronously creates a new user and returns the created user entity.
+        
+        Args:
+            user: The user entity to be created.
+        
+        Returns:
+            The newly created user entity.
+        """
         pass
     
     @abstractmethod
     async def get_by_id(self, user_id: UUID) -> Optional[User]:
-        """Get user by ID"""
+        """
+        Asynchronously retrieves a user by their unique identifier.
+        
+        Args:
+            user_id: The UUID of the user to retrieve.
+        
+        Returns:
+            The user entity if found, or None if no user exists with the given ID.
+        """
         pass
     
     @abstractmethod
@@ -23,12 +39,28 @@ class UserRepositoryPort(ABC):
     
     @abstractmethod
     async def update(self, user: User) -> User:
-        """Update existing user"""
+        """
+        Asynchronously updates an existing user entity.
+        
+        Args:
+        	user: The user entity with updated information.
+        
+        Returns:
+        	The updated user entity.
+        """
         pass
     
     @abstractmethod
     async def delete(self, user_id: UUID) -> bool:
-        """Delete user by ID"""
+        """
+        Asynchronously deletes a user by their unique identifier.
+        
+        Args:
+            user_id: The UUID of the user to delete.
+        
+        Returns:
+            True if the user was successfully deleted, False otherwise.
+        """
         pass
     
     @abstractmethod
@@ -38,7 +70,19 @@ class UserRepositoryPort(ABC):
                         search: Optional[str] = None,
                         limit: int = 100,
                         offset: int = 0) -> List[User]:
-        """List users with filters and pagination"""
+        """
+                        Retrieves a list of users filtered by status, role, and search criteria, with pagination.
+                        
+                        Args:
+                            status: Optional user status to filter by.
+                            role: Optional user role to filter by.
+                            search: Optional search term to match against user attributes.
+                            limit: Maximum number of users to return.
+                            offset: Number of users to skip before starting to collect the result set.
+                        
+                        Returns:
+                            A list of users matching the specified filters and pagination parameters.
+                        """
         pass
     
     @abstractmethod
@@ -46,5 +90,15 @@ class UserRepositoryPort(ABC):
                          status: Optional[str] = None,
                          role: Optional[str] = None,
                          search: Optional[str] = None) -> int:
-        """Count users matching filters"""
+        """
+                         Counts the number of users matching optional status, role, and search filters.
+                         
+                         Args:
+                             status: Optional user status to filter by.
+                             role: Optional user role to filter by.
+                             search: Optional search term to filter users.
+                         
+                         Returns:
+                             The count of users matching the specified filters.
+                         """
         pass 

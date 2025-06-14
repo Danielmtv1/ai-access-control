@@ -29,19 +29,23 @@ class MqttDeviceHandler:
         access_validation_use_case: ValidateAccessUseCase,
         mqtt_message_service: MqttMessageService
     ):
+        """
+        Initializes the MqttDeviceHandler with required services for device communication, access validation, and MQTT message processing.
+        
+        Args:
+            device_communication_service: Service for parsing and communicating with IoT devices.
+            access_validation_use_case: Use case for validating access requests from devices.
+            mqtt_message_service: Service for processing and logging MQTT messages.
+        """
         self.device_service = device_communication_service
         self.access_use_case = access_validation_use_case
         self.mqtt_service = mqtt_message_service
     
     async def handle_message(self, topic: str, payload: str) -> None:
         """
-        Route MQTT messages to appropriate handlers based on topic structure.
+        Processes an incoming MQTT message and dispatches it to the appropriate handler based on the topic structure.
         
-        Topic patterns:
-        - access/requests/{device_id} -> Access validation requests
-        - access/commands/{device_id}/ack -> Command acknowledgments
-        - access/devices/{device_id}/status -> Device status updates
-        - access/events/{type}/{device_id} -> Device events
+        Routes messages for access validation, command acknowledgments, device status updates, and device events by analyzing the topic pattern. Logs all incoming messages and handles errors during processing.
         """
         try:
             # Log all incoming messages
@@ -75,7 +79,11 @@ class MqttDeviceHandler:
             logger.error(f"Error handling MQTT message from {topic}: {str(e)}", exc_info=True)
     
     async def _handle_access_request(self, topic: str, payload: str) -> None:
-        """Handle access validation requests from devices."""
+        """
+        Processes an access validation request received from a device.
+        
+        Parses the incoming MQTT message for an access request, validates the access credentials using the access validation use case, and logs the outcome. If parsing or validation fails, logs the corresponding error.
+        """
         try:
             # Parse device request
             device_request = self.device_service.parse_device_request(topic, payload)
@@ -104,7 +112,11 @@ class MqttDeviceHandler:
             logger.error(f"Error processing access request: {str(e)}")
     
     async def _handle_command_acknowledgment(self, topic: str, payload: str) -> None:
-        """Handle command acknowledgments from devices."""
+        """
+        Processes command acknowledgment messages from devices.
+        
+        Parses the acknowledgment payload, logs the acknowledgment for auditing, and triggers additional handling if the command failed.
+        """
         try:
             ack = self.device_service.parse_command_acknowledgment(topic, payload)
             if not ack:
@@ -125,7 +137,11 @@ class MqttDeviceHandler:
             logger.error(f"Error processing command acknowledgment: {str(e)}")
     
     async def _handle_device_status(self, topic: str, payload: str) -> None:
-        """Handle device status updates."""
+        """
+        Processes a device status update message and triggers monitoring or alerts as needed.
+        
+        Parses the device status from the incoming MQTT message, logs the status for monitoring, and invokes alert handling if the device is not healthy.
+        """
         try:
             status = self.device_service.parse_device_status(topic, payload)
             if not status:
@@ -145,7 +161,11 @@ class MqttDeviceHandler:
             logger.error(f"Error processing device status: {str(e)}")
     
     async def _handle_device_event(self, topic: str, payload: str) -> None:
-        """Handle device events (security alerts, door forced, etc.)."""
+        """
+        Processes a device event message, logging it and handling critical or error severity events.
+        
+        Parses the device event from the topic and payload, logs the event for auditing, and invokes critical event handling if the event severity is "critical" or "error".
+        """
         try:
             event = self.device_service.parse_device_event(topic, payload)
             if not event:
@@ -165,7 +185,11 @@ class MqttDeviceHandler:
             logger.error(f"Error processing device event: {str(e)}")
     
     async def _log_message(self, topic: str, payload: str) -> None:
-        """Log incoming MQTT message."""
+        """
+        Logs an incoming MQTT message with its topic, payload, and timestamp.
+        
+        Creates an MqttMessage object and sends it to the MQTT message service for processing. Errors during logging are caught and recorded.
+        """
         try:
             message = MqttMessage(
                 topic=topic,
@@ -177,7 +201,11 @@ class MqttDeviceHandler:
             logger.error(f"Failed to log MQTT message: {str(e)}")
     
     async def _log_command_acknowledgment(self, ack: CommandAcknowledgment) -> None:
-        """Log command acknowledgment for audit trail."""
+        """
+        Logs a command acknowledgment event for auditing purposes.
+        
+        Creates a structured audit message containing acknowledgment details and sends it to the MQTT message service for processing.
+        """
         try:
             log_data = {
                 "event_type": "command_acknowledgment",
@@ -198,7 +226,11 @@ class MqttDeviceHandler:
             logger.error(f"Failed to log command acknowledgment: {str(e)}")
     
     async def _log_device_status(self, status: DeviceStatus) -> None:
-        """Log device status for monitoring."""
+        """
+        Logs the current status of a device for monitoring purposes.
+        
+        Creates a structured monitoring message containing device status details such as online state, door state, battery level, signal strength, and health, and sends it to the MQTT message service.
+        """
         try:
             log_data = {
                 "event_type": "device_status",
@@ -221,7 +253,12 @@ class MqttDeviceHandler:
             logger.error(f"Failed to log device status: {str(e)}")
     
     async def _log_device_event(self, event: DeviceEvent) -> None:
-        """Log device event for audit trail."""
+        """
+        Logs a device event to the audit trail by creating and processing an MQTT audit message.
+        
+        Args:
+            event: The device event containing event type, device ID, severity, details, message ID, and timestamp.
+        """
         try:
             log_data = {
                 "event_type": event.event_type,
@@ -242,7 +279,12 @@ class MqttDeviceHandler:
             logger.error(f"Failed to log device event: {str(e)}")
     
     async def _handle_failed_command(self, ack: CommandAcknowledgment) -> None:
-        """Handle failed command execution."""
+        """
+        Handles a failed command acknowledgment by logging the failure and sending an alert message.
+        
+        Args:
+        	ack: The command acknowledgment containing failure details.
+        """
         logger.warning(f"Handling failed command {ack.message_id} on device {ack.device_id}")
         
         # Could implement retry logic, notifications, etc.
@@ -266,7 +308,11 @@ class MqttDeviceHandler:
             logger.error(f"Failed to handle failed command: {str(e)}")
     
     async def _handle_device_alert(self, status: DeviceStatus) -> None:
-        """Handle device health alerts."""
+        """
+        Sends a device health alert when a device reports an error or unhealthy status.
+        
+        Triggers an alert message containing device health details such as battery level, signal strength, and error message. The alert is sent to the MQTT message service for further processing.
+        """
         logger.warning(f"Device {status.device_id} health alert: {status.error_message}")
         
         try:
@@ -289,7 +335,12 @@ class MqttDeviceHandler:
             logger.error(f"Failed to handle device alert: {str(e)}")
     
     async def _handle_critical_event(self, event: DeviceEvent) -> None:
-        """Handle critical security events."""
+        """
+        Handles critical security events by logging the event, sending an alert message, and invoking specific handlers for door forced or tamper alerts.
+        
+        Args:
+            event: The device event representing a critical security incident.
+        """
         logger.critical(f"Critical event from device {event.device_id}: {event.event_type}")
         
         try:
@@ -320,7 +371,9 @@ class MqttDeviceHandler:
             logger.error(f"Failed to handle critical event: {str(e)}")
     
     async def _handle_door_forced_event(self, event: DeviceEvent) -> None:
-        """Handle door forced open security event."""
+        """
+        Handles a door forced open security event by broadcasting a critical security alert notification for the affected device.
+        """
         logger.critical(f"Door forced open on device {event.device_id}")
         
         # Could trigger emergency protocols, notifications, etc.
@@ -331,7 +384,12 @@ class MqttDeviceHandler:
         )
     
     async def _handle_tamper_event(self, event: DeviceEvent) -> None:
-        """Handle device tamper security event."""
+        """
+        Handles a device tamper security event by broadcasting a critical security alert notification.
+        
+        Args:
+            event: The device event containing tamper detection details.
+        """
         logger.critical(f"Device tamper detected on {event.device_id}")
         
         # Could trigger emergency lockdown, notifications, etc.

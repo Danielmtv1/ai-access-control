@@ -15,11 +15,18 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def get_entity_class(cls):
+        """
+        Returns the User domain entity class.
+        """
         return User
     
     @classmethod
     def build(cls, **kwargs) -> Dict[str, Any]:
-        """Build user attributes with sensible defaults."""
+        """
+        Builds a dictionary of user attributes with default values for testing.
+        
+        Keyword arguments can be provided to override any default attribute.
+        """
         defaults = {
             'id': cls.generate_uuid('user'),
             'email': cls.generate_email('user'),
@@ -34,12 +41,22 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def create(cls, **kwargs) -> User:
-        """Create a User entity."""
+        """
+        Creates a User domain entity with default or overridden attributes.
+        
+        Keyword arguments can be provided to override default user attributes such as email, roles, status, or timestamps.
+        Returns:
+            A User entity instance.
+        """
         return cls.create_entity(**kwargs)
     
     @classmethod
     def create_admin(cls, **kwargs) -> User:
-        """Create an admin user."""
+        """
+        Creates a User entity with admin role and default admin attributes.
+        
+        Additional attributes can be provided via keyword arguments to override defaults.
+        """
         admin_defaults = {
             'email': cls.generate_email('admin'),
             'full_name': cls.generate_name('Admin', 'User'),
@@ -49,7 +66,11 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def create_operator(cls, **kwargs) -> User:
-        """Create an operator user."""
+        """
+        Creates a user entity with the operator role.
+        
+        Additional attributes can be provided to override the default operator email, name, or roles.
+        """
         operator_defaults = {
             'email': cls.generate_email('operator'),
             'full_name': cls.generate_name('Operator', 'User'),
@@ -59,7 +80,11 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def create_viewer(cls, **kwargs) -> User:
-        """Create a viewer user."""
+        """
+        Creates a User entity with the viewer role.
+        
+        Additional attributes can be provided to override the default viewer properties.
+        """
         viewer_defaults = {
             'email': cls.generate_email('viewer'),
             'full_name': cls.generate_name('Viewer', 'User'),
@@ -69,7 +94,11 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def create_inactive(cls, **kwargs) -> User:
-        """Create an inactive user."""
+        """
+        Creates a user entity with inactive status.
+        
+        Additional attributes can be provided to override the defaults.
+        """
         inactive_defaults = {
             'status': UserStatus.INACTIVE,
             'email': cls.generate_email('inactive')
@@ -78,7 +107,14 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def create_suspended(cls, **kwargs) -> User:
-        """Create a suspended user."""
+        """
+        Creates a suspended user entity with default suspended status and email.
+        
+        Additional attributes can be provided via keyword arguments to override defaults.
+        
+        Returns:
+            A User entity instance with suspended status.
+        """
         suspended_defaults = {
             'status': UserStatus.SUSPENDED,
             'email': cls.generate_email('suspended')
@@ -87,7 +123,15 @@ class UserFactory(EntityFactory):
     
     @classmethod
     def create_with_multiple_roles(cls, roles: List[Role], **kwargs) -> User:
-        """Create a user with multiple roles."""
+        """
+        Creates a user entity with the specified list of roles.
+        
+        Args:
+            roles: A list of Role values to assign to the user.
+        
+        Returns:
+            A User entity with the provided roles and default or overridden attributes.
+        """
         multi_role_defaults = {
             'roles': roles,
             'email': cls.generate_email('multirole')
@@ -100,11 +144,20 @@ class UserModelFactory(DatabaseFactory):
     
     @classmethod
     def get_model_class(cls):
+        """
+        Returns the UserModel class associated with this factory.
+        """
         return UserModel
     
     @classmethod
     def build(cls, **kwargs) -> Dict[str, Any]:
-        """Build user model attributes with sensible defaults."""
+        """
+        Builds a dictionary of user model attributes with default values for testing.
+        
+        Keyword arguments can be provided to override any default attribute.
+        Returns:
+            A dictionary containing user model attributes suitable for creating a UserModel instance.
+        """
         defaults = {
             'id': cls.generate_uuid('user'),
             'email': cls.generate_email('user'),
@@ -120,12 +173,22 @@ class UserModelFactory(DatabaseFactory):
     
     @classmethod
     def create(cls, **kwargs) -> UserModel:
-        """Create a UserModel instance."""
+        """
+        Creates a UserModel instance with default or overridden attributes for testing.
+        
+        Keyword arguments can be provided to override default user model attributes such as email, roles, or status.
+        Returns:
+            A UserModel instance populated with the specified or default attributes.
+        """
         return cls.create_model(**kwargs)
     
     @classmethod
     def create_admin(cls, **kwargs) -> UserModel:
-        """Create an admin user model."""
+        """
+        Creates a UserModel instance with admin role and default admin attributes.
+        
+        Additional attributes can be provided via keyword arguments to override defaults.
+        """
         admin_defaults = {
             'email': cls.generate_email('admin'),
             'full_name': cls.generate_name('Admin', 'User'),
@@ -135,7 +198,11 @@ class UserModelFactory(DatabaseFactory):
     
     @classmethod
     def create_operator(cls, **kwargs) -> UserModel:
-        """Create an operator user model."""
+        """
+        Creates a UserModel instance representing an operator user.
+        
+        Operator-specific default values are applied for email, full name, and roles, but can be overridden via keyword arguments.
+        """
         operator_defaults = {
             'email': cls.generate_email('operator'),
             'full_name': cls.generate_name('Operator', 'User'),
@@ -145,7 +212,11 @@ class UserModelFactory(DatabaseFactory):
     
     @classmethod
     def create_inactive(cls, **kwargs) -> UserModel:
-        """Create an inactive user model."""
+        """
+        Creates a UserModel instance representing an inactive user.
+        
+        Additional attributes can be provided to override the default inactive settings.
+        """
         inactive_defaults = {
             'is_active': False,
             'email': cls.generate_email('inactive')
@@ -154,13 +225,29 @@ class UserModelFactory(DatabaseFactory):
     
     @classmethod
     def create_with_specific_id(cls, user_id: UUID, **kwargs) -> UserModel:
-        """Create user model with specific ID (useful for testing relationships)."""
+        """
+        Creates a UserModel instance with a specified UUID.
+        
+        Args:
+            user_id: The UUID to assign to the created user model.
+        
+        Returns:
+            A UserModel instance with the given UUID and any additional attributes provided.
+        """
         specific_defaults = {'id': user_id}
         return cls.create(**cls.merge_kwargs(specific_defaults, kwargs))
     
     @classmethod
     def _generate_hashed_password(cls, plain_password: str = 'password123') -> str:
-        """Generate a hashed password for testing."""
+        """
+        Generates a hashed password from a plain text password for testing purposes.
+        
+        Args:
+            plain_password: The plain text password to hash. Defaults to 'password123'.
+        
+        Returns:
+            The hashed password as a string.
+        """
         auth_service = AuthService()
         return auth_service.hash_password(plain_password)
 

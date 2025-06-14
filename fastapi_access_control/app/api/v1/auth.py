@@ -24,7 +24,9 @@ router = APIRouter(
 )
 
 def get_auth_service():
-    """Dependency to get AuthService instance"""
+    """
+    Provides an instance of AuthService for dependency injection.
+    """
     return AuthService()
 
 
@@ -85,18 +87,9 @@ async def login(
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
     """
-    Authenticate a user and return JWT tokens.
+    Authenticates a user using provided credentials and returns JWT tokens.
     
-    Args:
-        login_data: User credentials (email and password)
-        auth_service: Authentication service instance
-        user_repository: User repository instance
-    
-    Returns:
-        TokenResponse: JWT tokens for authentication
-        
-    Raises:
-        HTTPException: If credentials are invalid or user is inactive
+    On successful authentication, issues access and refresh tokens for the user. Raises an HTTP 422 error for validation issues and HTTP 401 for invalid credentials.
     """
     try:
         logger.info(f"Login attempt for email: {login_data.email}")
@@ -176,18 +169,10 @@ async def refresh_token(
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
     """
-    Refresh the access token using a refresh token.
-    
-    Args:
-        refresh_request: Refresh token from previous login
-        auth_service: Authentication service instance
-        user_repository: User repository instance
+    Refreshes JWT tokens using a valid refresh token.
     
     Returns:
-        TokenResponse: New JWT tokens
-        
-    Raises:
-        HTTPException: If refresh token is invalid or user is inactive
+        A TokenResponse containing new access and refresh tokens if the provided refresh token is valid.
     """
     try:
         refresh_use_case = RefreshTokenUseCase(auth_service, user_repository)
@@ -248,22 +233,9 @@ async def token(
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
     """
-    OAuth2 compatible token endpoint for authentication.
+    Provides an OAuth2-compatible token endpoint for user authentication.
     
-    This endpoint accepts form data and provides the same authentication
-    functionality as the /login endpoint, but in a format compatible
-    with OAuth2 and Swagger UI.
-    
-    Args:
-        form_data: OAuth2 form data with username (email) and password
-        auth_service: Authentication service instance
-        user_repository: User repository instance
-    
-    Returns:
-        TokenResponse: JWT tokens for authentication
-        
-    Raises:
-        HTTPException: If credentials are invalid or user is inactive
+    Accepts form data with username (email) and password, returning JWT tokens for use with OAuth2 clients and Swagger UI. Returns a TokenResponse containing access and refresh tokens on successful authentication. Raises HTTP 401 for invalid credentials, HTTP 422 for validation errors, and HTTP 500 if the authentication service is unavailable.
     """
     try:
         # Use username field as email (OAuth2 standard)

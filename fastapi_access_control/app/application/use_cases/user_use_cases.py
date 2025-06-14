@@ -17,7 +17,10 @@ class CreateUserUseCase:
     def __init__(self, 
                  user_repository: UserRepositoryPort,
                  auth_service: AuthService):
-        self.user_repository = user_repository
+        """
+                 Initializes the use case with a user repository and authentication service.
+                 """
+                 self.user_repository = user_repository
         self.auth_service = auth_service
     
     async def execute(self,
@@ -26,7 +29,25 @@ class CreateUserUseCase:
                      full_name: str,
                      roles: List[str],
                      status: str = "active") -> User:
-        """Create new user"""
+        """
+                     Creates a new user with the specified email, password, full name, roles, and status.
+                     
+                     Validates that the email is unique, hashes the password, and converts role and status strings to their respective enums. Raises an error if the email already exists, or if any role or status is invalid. Persists the new user and returns the created user entity.
+                     
+                     Args:
+                         email: The user's email address.
+                         password: The user's plaintext password.
+                         full_name: The user's full name.
+                         roles: List of role names to assign to the user.
+                         status: The user's initial status (default is "active").
+                     
+                     Returns:
+                         The created User entity.
+                     
+                     Raises:
+                         EntityAlreadyExistsError: If a user with the given email already exists.
+                         ValidationError: If any provided role or status is invalid.
+                     """
         logger.info(f"Creating user with email: {email}")
         
         # Check if user already exists
@@ -75,10 +96,21 @@ class GetUserUseCase:
     """Use case for retrieving user by ID"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self, user_id: UUID) -> User:
-        """Get user by ID"""
+        """
+        Retrieves a user by their unique identifier.
+        
+        Raises:
+            UserNotFoundError: If no user exists with the specified ID.
+        
+        Returns:
+            The user entity corresponding to the given UUID.
+        """
         user = await self.user_repository.get_by_id(user_id)
         if not user:
             raise UserNotFoundError(f"User with ID {user_id} not found")
@@ -89,10 +121,21 @@ class GetUserByEmailUseCase:
     """Use case for retrieving user by email"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self, email: str) -> User:
-        """Get user by email"""
+        """
+        Retrieves a user entity by email address.
+        
+        Raises:
+            UserNotFoundError: If no user with the specified email exists.
+        
+        Returns:
+            The user entity corresponding to the provided email.
+        """
         user = await self.user_repository.get_by_email(email)
         if not user:
             raise UserNotFoundError(f"User with email {email} not found")
@@ -103,6 +146,9 @@ class ListUsersUseCase:
     """Use case for listing users with filters and pagination"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self,
@@ -111,7 +157,19 @@ class ListUsersUseCase:
                      search: Optional[str] = None,
                      page: int = 1,
                      size: int = 50) -> Dict[str, Any]:
-        """List users with filters"""
+        """
+                     Retrieves a paginated list of users with optional filtering by status, role, and search term.
+                     
+                     Args:
+                         status: Optional user status to filter by.
+                         role: Optional user role to filter by.
+                         search: Optional search term to filter users.
+                         page: Page number for pagination (default is 1).
+                         size: Number of users per page (default is 50).
+                     
+                     Returns:
+                         A dictionary containing the list of users, total user count, current page, page size, and total number of pages.
+                     """
         logger.info(f"Listing users with filters: status={status}, role={role}, search={search}")
         
         # Calculate offset
@@ -148,6 +206,9 @@ class UpdateUserUseCase:
     """Use case for updating users"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self,
@@ -155,7 +216,22 @@ class UpdateUserUseCase:
                      full_name: Optional[str] = None,
                      roles: Optional[List[str]] = None,
                      status: Optional[str] = None) -> User:
-        """Update user"""
+        """
+                     Updates a user's full name, roles, or status by user ID.
+                     
+                     Raises:
+                         UserNotFoundError: If the user with the given ID does not exist.
+                         ValidationError: If any provided role or status is invalid.
+                     
+                     Args:
+                         user_id: Unique identifier of the user to update.
+                         full_name: New full name for the user, if provided.
+                         roles: List of new roles for the user, if provided.
+                         status: New status for the user, if provided.
+                     
+                     Returns:
+                         The updated User entity.
+                     """
         logger.info(f"Updating user {user_id}")
         
         # Get existing user
@@ -197,10 +273,21 @@ class DeleteUserUseCase:
     """Use case for deleting users"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self, user_id: UUID) -> bool:
-        """Delete user"""
+        """
+        Deletes a user by their unique identifier.
+        
+        Raises:
+            UserNotFoundError: If no user exists with the specified ID.
+        
+        Returns:
+            True if the user was successfully deleted, False otherwise.
+        """
         logger.info(f"Deleting user {user_id}")
         
         # Check if user exists
@@ -221,10 +308,20 @@ class SuspendUserUseCase:
     """Use case for suspending users (soft delete by setting status)"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self, user_id: UUID) -> User:
-        """Suspend user by setting status to suspended"""
+        """
+        Suspends a user by setting their status to SUSPENDED.
+        
+        Retrieves the user by ID, updates their status to suspended, updates the modification timestamp, and persists the changes. Raises UserNotFoundError if the user does not exist.
+        
+        Returns:
+            The updated user entity with suspended status.
+        """
         logger.info(f"Suspending user {user_id}")
         
         # Get existing user
@@ -246,10 +343,20 @@ class ActivateUserUseCase:
     """Use case for activating users"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self, user_id: UUID) -> User:
-        """Activate user by setting status to active"""
+        """
+        Activates a user by setting their status to active.
+        
+        Retrieves the user by ID, updates their status to active, refreshes the update timestamp, and persists the changes. Raises UserNotFoundError if the user does not exist.
+        
+        Returns:
+            The updated user entity.
+        """
         logger.info(f"Activating user {user_id}")
         
         # Get existing user
@@ -273,14 +380,26 @@ class ChangePasswordUseCase:
     def __init__(self, 
                  user_repository: UserRepositoryPort,
                  auth_service: AuthService):
-        self.user_repository = user_repository
+        """
+                 Initializes the use case with a user repository and authentication service.
+                 """
+                 self.user_repository = user_repository
         self.auth_service = auth_service
     
     async def execute(self,
                      user_id: UUID,
                      current_password: str,
                      new_password: str) -> User:
-        """Change user password"""
+        """
+                     Changes a user's password after verifying the current password.
+                     
+                     Raises:
+                         UserNotFoundError: If the user with the given ID does not exist.
+                         ValidationError: If the current password is incorrect.
+                     
+                     Returns:
+                         The updated user entity with the new password.
+                     """
         logger.info(f"Changing password for user {user_id}")
         
         # Get existing user
@@ -309,10 +428,18 @@ class GetUserStatsUseCase:
     """Use case for getting user statistics"""
     
     def __init__(self, user_repository: UserRepositoryPort):
+        """
+        Initializes the use case with a user repository for data access.
+        """
         self.user_repository = user_repository
     
     async def execute(self) -> Dict[str, Any]:
-        """Get user statistics"""
+        """
+        Retrieves aggregated statistics about users.
+        
+        Returns:
+            A dictionary containing the total number of users, counts by status (active, inactive, suspended), and counts by role (admin, operator, user, viewer).
+        """
         logger.info("Getting user statistics")
         
         # Get total users

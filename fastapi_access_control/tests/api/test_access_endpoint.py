@@ -19,17 +19,26 @@ class TestAccessEndpoint:
     
     @pytest.fixture
     def client(self):
-        """HTTP test client."""
+        """
+        Provides an HTTP test client for the FastAPI application.
+        """
         return TestClient(app)
     
     @pytest.fixture
     def mock_validate_use_case(self):
-        """Mock ValidateAccessUseCase."""
+        """
+        Provides an asynchronous mock instance of the ValidateAccessUseCase for testing.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_repositories(self):
-        """Mock repository dependencies."""
+        """
+        Creates and returns a dictionary of async mock objects for repository and service dependencies used in access validation tests.
+        
+        Returns:
+            dict: A mapping of dependency names to their corresponding AsyncMock instances.
+        """
         return {
             'card_repository': AsyncMock(),
             'door_repository': AsyncMock(),
@@ -39,13 +48,19 @@ class TestAccessEndpoint:
         }
     
     def test_validate_access_endpoint_exists(self, client):
-        """Test that access validation endpoint exists."""
+        """
+        Verifies that the access validation endpoint is registered and does not return a 404 status.
+        """
         # This should return 422 (validation error) or other error, not 404
         response = client.post("/api/v1/access/validate", json={})
         assert response.status_code != 404
     
     def test_validate_access_request_validation(self, client):
-        """Test request validation for access endpoint."""
+        """
+        Tests that the access validation endpoint enforces required fields and correct data types.
+        
+        Sends POST requests with missing or invalid payloads to verify that the endpoint returns a 422 status code for validation errors.
+        """
         # Test missing required fields
         response = client.post("/api/v1/access/validate", json={})
         assert response.status_code == 422
@@ -65,7 +80,12 @@ class TestAccessEndpoint:
         assert response.status_code == 422
     
     def test_validate_access_card_id_validation(self, client):
-        """Test card_id field validation."""
+        """
+        Tests that the access validation endpoint enforces card_id field constraints.
+        
+        Sends requests with an empty card_id and a card_id exceeding the maximum length,
+        asserting that both cases result in a 422 Unprocessable Entity response.
+        """
         # Test empty card_id
         response = client.post("/api/v1/access/validate", json={
             "card_id": "",
@@ -81,7 +101,11 @@ class TestAccessEndpoint:
         assert response.status_code == 422
     
     def test_validate_access_pin_validation(self, client):
-        """Test PIN field validation."""
+        """
+        Verifies that the access validation endpoint enforces PIN length constraints.
+        
+        Sends requests with PIN values that are too short or too long and asserts that the response status code is 422, indicating validation errors.
+        """
         # Test PIN too short
         response = client.post("/api/v1/access/validate", json={
             "card_id": "TEST123",
@@ -100,7 +124,11 @@ class TestAccessEndpoint:
     
     @patch('app.api.v1.access.ValidateAccessUseCase')
     def test_validate_access_success(self, mock_use_case_class, client, mock_repositories):
-        """Test successful access validation."""
+        """
+        Tests that the access validation endpoint returns a successful response with correct data when access is granted.
+        
+        Simulates a valid access request and verifies that the response includes expected fields such as `access_granted`, `door_name`, `user_name`, `card_type`, and a `timestamp`.
+        """
         # Arrange
         mock_use_case = AsyncMock()
         mock_use_case_class.return_value = mock_use_case
@@ -145,7 +173,11 @@ class TestAccessEndpoint:
     
     @patch('app.api.v1.access.ValidateAccessUseCase')
     def test_validate_access_card_not_found(self, mock_use_case_class, client, mock_repositories):
-        """Test access validation with card not found."""
+        """
+        Tests that the access validation endpoint returns a 404 error when the specified card is not found.
+        
+        Simulates the use case raising an EntityNotFoundError and verifies the response status and error message.
+        """
         # Arrange
         mock_use_case = AsyncMock()
         mock_use_case_class.return_value = mock_use_case
@@ -172,7 +204,9 @@ class TestAccessEndpoint:
     
     @patch('app.api.v1.access.ValidateAccessUseCase')
     def test_validate_access_invalid_card(self, mock_use_case_class, client, mock_repositories):
-        """Test access validation with invalid card."""
+        """
+        Tests that the access validation endpoint returns a 400 status code and appropriate error message when an invalid (inactive) card is used.
+        """
         # Arrange
         mock_use_case = AsyncMock()
         mock_use_case_class.return_value = mock_use_case
@@ -199,7 +233,9 @@ class TestAccessEndpoint:
     
     @patch('app.api.v1.access.ValidateAccessUseCase')
     def test_validate_access_denied(self, mock_use_case_class, client, mock_repositories):
-        """Test access validation when access is denied."""
+        """
+        Tests that the access validation endpoint returns a 403 status code and appropriate error message when access is denied due to insufficient permissions.
+        """
         # Arrange
         mock_use_case = AsyncMock()
         mock_use_case_class.return_value = mock_use_case
@@ -226,7 +262,9 @@ class TestAccessEndpoint:
     
     @patch('app.api.v1.access.ValidateAccessUseCase')
     def test_validate_access_internal_error(self, mock_use_case_class, client, mock_repositories):
-        """Test access validation with internal server error."""
+        """
+        Tests that the access validation endpoint returns a 500 status code and appropriate error message when an unexpected internal server error occurs during processing.
+        """
         # Arrange
         mock_use_case = AsyncMock()
         mock_use_case_class.return_value = mock_use_case
@@ -252,12 +290,20 @@ class TestAccessEndpoint:
         assert "Internal server error" in response.json()["detail"]
     
     def test_access_endpoint_content_type(self, client):
-        """Test that endpoint requires proper content type."""
+        """
+        Tests that the access validation endpoint rejects requests with non-JSON content types.
+        
+        Sends a POST request with invalid (non-JSON) data and asserts that the response status code indicates a validation or bad request error.
+        """
         response = client.post("/api/v1/access/validate", data="invalid")
         assert response.status_code in [422, 400]  # Should reject non-JSON
     
     def test_access_endpoint_documentation(self):
-        """Test that endpoint has proper OpenAPI documentation."""
+        """
+        Verifies that the access validation endpoint is documented in the OpenAPI schema.
+        
+        Checks that the `/validate` route exists, supports the POST method, and that the endpoint function has a descriptive docstring mentioning "Validate access request from IoT device".
+        """
         from app.api.v1.access import router
         
         # Find the validate_access route

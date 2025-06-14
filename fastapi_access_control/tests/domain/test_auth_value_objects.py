@@ -219,7 +219,9 @@ class TestTokenPair:
             )
     
     def test_token_pair_expires_in_too_short(self):
-        """Test TokenPair with expires_in too short"""
+        """
+        Tests that creating a TokenPair with an expires_in value below the minimum allowed raises a ValidationError.
+        """
         with pytest.raises(ValidationError) as exc_info:
             TokenPair(
                 access_token="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ",
@@ -230,7 +232,9 @@ class TestTokenPair:
         assert "at least" in str(exc_info.value) and "seconds" in str(exc_info.value)
     
     def test_token_pair_expires_in_too_long(self):
-        """Test TokenPair with expires_in too long"""
+        """
+        Verifies that creating a TokenPair with an expires_in value exceeding 86400 seconds raises a ValidationError.
+        """
         with pytest.raises(ValidationError) as exc_info:
             TokenPair(
                 access_token="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ",

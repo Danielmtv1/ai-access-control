@@ -13,12 +13,19 @@ class TestAccessControlFlow:
     
     @pytest.fixture
     def auth_service(self):
-        """Local auth service instance"""
+        """
+        Provides a local instance of the authentication service for use in tests.
+        """
         return AuthService()
     
     @pytest.fixture
     def sample_admin_user(self):
-        """Sample admin user for testing"""
+        """
+        Provides a sample admin user entity with admin and operator roles for testing purposes.
+        
+        Returns:
+            A User instance representing an active admin with predefined attributes.
+        """
         return User(
             id=SAMPLE_ADMIN_UUID,
             email="admin@example.com",
@@ -32,22 +39,45 @@ class TestAccessControlFlow:
     
     @pytest.fixture
     def admin_jwt_token(self, auth_service, sample_admin_user):
-        """Valid JWT token for admin user"""
+        """
+        Generates a valid JWT access token for the sample admin user.
+        
+        Returns:
+            A JWT access token string representing the authenticated admin user.
+        """
         return auth_service.generate_access_token(sample_admin_user)
     
     @pytest.fixture
     def admin_headers(self, admin_jwt_token):
-        """Headers with admin JWT token"""
+        """
+        Constructs HTTP headers containing the admin JWT token for authorization.
+        
+        Args:
+            admin_jwt_token: The JWT token string for the admin user.
+        
+        Returns:
+            A dictionary with the Authorization header set to use the provided JWT token.
+        """
         return {"Authorization": f"Bearer {admin_jwt_token}"}
     
     @pytest.fixture
     def sync_client(self):
-        """Synchronous test client for these specific tests"""
+        """
+        Provides a synchronous FastAPI TestClient with authentication dependency overridden to always return a sample admin user.
+        
+        Yields:
+            TestClient: A test client instance with mocked authentication for use in integration tests.
+        """
         from app.main import app
         from app.api.dependencies.auth_dependencies import get_current_user
         
         # Mock the auth dependency to skip authentication for these tests
         def mock_get_current_user():
+            """
+            Returns a mock admin user entity with active status and both admin and operator roles.
+            
+            This function is typically used to override authentication dependencies in tests, providing a consistent user context for authorization scenarios.
+            """
             from app.domain.entities.user import User, Role, UserStatus
             return User(
                 id=SAMPLE_ADMIN_UUID,
@@ -71,12 +101,18 @@ class TestAccessControlFlow:
     
     @pytest.fixture
     def auth_client(self):
-        """Synchronous test client WITHOUT auth bypass for auth flow testing"""
+        """
+        Provides a synchronous FastAPI test client without authentication bypass for testing authentication flows.
+        """
         from app.main import app
         return TestClient(app)
     
     def test_complete_card_management_flow(self, sync_client: TestClient, admin_headers):
-        """Test complete card management workflow: create, read, update, suspend, delete"""
+        """
+        Tests the complete card management workflow, including creating, retrieving, updating, suspending, and deleting a card via the API.
+        
+        This integration test verifies that each step in the card lifecycle returns the expected HTTP status codes and response data, ensuring correct behavior for card creation, lookup by card ID, updating card attributes, suspending a card, and deleting a card.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Step 1: Create a new card
@@ -184,7 +220,11 @@ class TestAccessControlFlow:
             assert response.status_code == 204
     
     def test_complete_door_management_flow(self, sync_client: TestClient, admin_headers):
-        """Test complete door management workflow: create, read, update status, delete"""
+        """
+        Tests the complete door management workflow, including creation, retrieval, update, status change, filtering by security level, and deletion of a door via the API.
+        
+        Simulates each step using mocked use cases and verifies correct HTTP responses and payloads for door lifecycle operations.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Step 1: Create a new door with schedule
@@ -335,7 +375,11 @@ class TestAccessControlFlow:
             assert response.status_code == 204
     
     def test_user_card_association_flow(self, sync_client: TestClient, admin_headers):
-        """Test flow of associating multiple cards with a user"""
+        """
+        Tests associating multiple cards of different types and statuses with a single user.
+        
+        This integration test verifies that an employee can have multiple cards (primary, backup, and temporary visitor cards) created and associated with their user ID, and that all associated cards can be retrieved with correct types and statuses.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Step 1: Create primary employee card
@@ -448,7 +492,11 @@ class TestAccessControlFlow:
             assert "inactive" in card_statuses
     
     def test_door_location_filtering_flow(self, sync_client: TestClient, admin_headers):
-        """Test flow of filtering doors by location and security level"""
+        """
+        Tests filtering doors by location, security level, and active status.
+        
+        This integration test verifies that the doors API correctly filters doors based on location, security level, and active status by mocking the relevant use cases and asserting the expected responses and data structure.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Step 1: Get doors by location
@@ -516,7 +564,11 @@ class TestAccessControlFlow:
             assert all(door["status"] == "active" for door in data["doors"])
     
     def test_authentication_flow_integration(self, auth_client: TestClient):
-        """Test authentication flow for API access"""
+        """
+        Tests the authentication flow for API access, including unauthorized access, login, and token validation.
+        
+        Simulates an unauthorized request to a protected endpoint, performs a login to obtain a JWT access token, and verifies the token's presence and format in the response.
+        """
         # Step 1: Attempt access without authentication
         response = auth_client.get("/api/v1/cards/")
         assert response.status_code == 401

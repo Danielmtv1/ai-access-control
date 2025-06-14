@@ -28,7 +28,11 @@ class DetailedHealthCheck(BaseModel):
     details: Dict[str, Any]
 
 async def check_database() -> DetailedHealthCheck:
-    """Check database connectivity"""
+    """
+    Performs an asynchronous health check of the database connection.
+    
+    Executes a simple SQL query to verify database connectivity and measures response time. Returns a DetailedHealthCheck indicating "healthy" if the query succeeds, or "unhealthy" with error details if it fails.
+    """
     start_time = time.time()
     
     try:
@@ -54,7 +58,14 @@ async def check_database() -> DetailedHealthCheck:
         )
 
 async def check_mqtt() -> DetailedHealthCheck:
-    """Check MQTT connectivity"""
+    """
+    Performs an asynchronous health check of the MQTT connection.
+    
+    Returns:
+        A DetailedHealthCheck indicating whether the MQTT connection is active,
+        including response time and broker details. If an error occurs, returns
+        status "unhealthy" with error information.
+    """
     start_time = time.time()
     
     try:
@@ -88,7 +99,11 @@ async def check_mqtt() -> DetailedHealthCheck:
 
 @router.get("/health", response_model=HealthStatus)
 async def health_check():
-    """Basic health check endpoint"""
+    """
+    Returns a basic health status indicating the service is operational.
+    
+    This endpoint provides a simple health check response with status, current UTC timestamp, version, and no detailed checks.
+    """
     return HealthStatus(
         status="healthy",
         timestamp=datetime.now(timezone.utc),
@@ -98,7 +113,11 @@ async def health_check():
 
 @router.get("/health/detailed", response_model=HealthStatus)
 async def detailed_health_check():
-    """Detailed health check with all services"""
+    """
+    Performs a detailed health check of all services and returns their statuses.
+    
+    Runs database and MQTT connectivity checks concurrently, aggregates their results, and determines the overall health status as "healthy" if all checks pass, or "degraded" otherwise. Returns a HealthStatus object with the current UTC timestamp, version, and detailed results for each service.
+    """
     
     # Run all checks concurrently
     db_check, mqtt_check = await asyncio.gather(

@@ -14,7 +14,11 @@ class TestPermission:
     """Test cases for Permission domain entity"""
     
     def test_permission_creation(self):
-        """Test Permission entity creation with valid data"""
+        """
+        Verifies that a Permission entity is correctly created with valid attributes.
+        
+        Asserts that all fields, including IDs, status, validity dates, access schedule, and pin requirement, are properly assigned, and that last_used is initially None.
+        """
         now = datetime.now()
         valid_until = now + timedelta(days=30)
         
@@ -46,7 +50,9 @@ class TestPermission:
         assert permission.last_used is None
     
     def test_permission_is_active_with_active_status(self):
-        """Test permission is_active returns True for ACTIVE status"""
+        """
+        Verifies that a permission with ACTIVE status and a current validity period is considered active.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -64,7 +70,9 @@ class TestPermission:
         assert permission.is_active() is True
     
     def test_permission_is_active_with_inactive_status(self):
-        """Test permission is_active returns False for INACTIVE status"""
+        """
+        Verifies that is_active() returns False when the permission status is INACTIVE, regardless of validity dates.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -82,7 +90,9 @@ class TestPermission:
         assert permission.is_active() is False
     
     def test_permission_is_active_with_future_valid_from(self):
-        """Test permission is_active returns False if valid_from is in the future"""
+        """
+        Verifies that a permission is not active if its valid_from date is in the future.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -100,7 +110,9 @@ class TestPermission:
         assert permission.is_active() is False
     
     def test_permission_is_active_with_past_valid_until(self):
-        """Test permission is_active returns False if valid_until is in the past"""
+        """
+        Verifies that a permission is not active when its valid_until date is in the past.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -118,7 +130,9 @@ class TestPermission:
         assert permission.is_active() is False
     
     def test_permission_is_expired_with_past_valid_until(self):
-        """Test permission is_expired returns True if valid_until is in the past"""
+        """
+        Verifies that is_expired() returns True when the permission's valid_until date is in the past.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -136,7 +150,9 @@ class TestPermission:
         assert permission.is_expired() is True
     
     def test_permission_is_expired_with_no_valid_until(self):
-        """Test permission is_expired returns False if valid_until is None"""
+        """
+        Verifies that a permission with no expiration date (`valid_until` set to None) is not considered expired.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -154,7 +170,9 @@ class TestPermission:
         assert permission.is_expired() is False
     
     def test_permission_can_access_door_with_matching_door_id(self):
-        """Test can_access_door returns True when permission is active and door_id matches"""
+        """
+        Tests that can_access_door returns True when the permission is active and the provided door ID matches the permission's door ID.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -172,7 +190,9 @@ class TestPermission:
         assert permission.can_access_door(door_id=TEST_DOOR_ID) is True
     
     def test_permission_can_access_door_with_non_matching_door_id(self):
-        """Test can_access_door returns False when door_id doesn't match"""
+        """
+        Verifies that can_access_door returns False when the provided door ID does not match the permission's door ID.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -190,7 +210,9 @@ class TestPermission:
         assert permission.can_access_door(door_id=UUID("f47ac10b-58cc-4372-a567-0e02b2c3d484")) is False
     
     def test_permission_can_access_door_when_inactive(self):
-        """Test can_access_door returns False when permission is inactive"""
+        """
+        Verifies that can_access_door returns False when the permission status is inactive.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -208,7 +230,11 @@ class TestPermission:
         assert permission.can_access_door(door_id=TEST_DOOR_ID) is False
     
     def test_permission_can_access_with_card_no_specific_card(self):
-        """Test can_access_with_card returns True when permission has no specific card requirement"""
+        """
+        Verifies that can_access_with_card returns True when no specific card is required.
+        
+        This test ensures that a permission with card_id set to None allows access with any card.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -246,7 +272,9 @@ class TestPermission:
         assert permission.can_access_with_card(card_id=TEST_CARD_ID) is True
     
     def test_permission_can_access_with_card_non_matching_card_id(self):
-        """Test can_access_with_card returns False when card_id doesn't match"""
+        """
+        Verifies that can_access_with_card returns False when the provided card ID does not match the permission's card ID.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -265,7 +293,9 @@ class TestPermission:
         assert permission.can_access_with_card(card_id=UUID("f47ac10b-58cc-4372-a567-0e02b2c3d482")) is False
     
     def test_permission_can_access_with_card_when_inactive(self):
-        """Test can_access_with_card returns False when permission is inactive"""
+        """
+        Verifies that can_access_with_card returns False when the permission status is inactive.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -284,7 +314,9 @@ class TestPermission:
         assert permission.can_access_with_card(card_id=TEST_CARD_ID) is False
     
     def test_permission_record_usage(self):
-        """Test record_usage updates last_used and updated_at"""
+        """
+        Verifies that calling record_usage() updates the last_used and updated_at timestamps of a Permission instance.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -309,7 +341,9 @@ class TestPermission:
         assert permission.updated_at > original_updated_at
     
     def test_permission_suspend(self):
-        """Test suspend changes status to SUSPENDED"""
+        """
+        Verifies that suspending a permission sets its status to SUSPENDED and updates the timestamp.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -334,7 +368,9 @@ class TestPermission:
         assert permission.updated_at > original_updated_at
     
     def test_permission_activate(self):
-        """Test activate changes status to ACTIVE"""
+        """
+        Verifies that activating a suspended permission sets its status to ACTIVE and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         permission = Permission(
@@ -359,7 +395,11 @@ class TestPermission:
         assert permission.updated_at > original_updated_at
     
     def test_permission_extend_validity(self):
-        """Test extend_validity updates valid_until"""
+        """
+        Verifies that extending a permission's validity updates the valid_until and updated_at fields.
+        
+        Ensures that calling extend_validity with a new date correctly sets the permission's valid_until to the new value and updates the updated_at timestamp.
+        """
         now = datetime.now()
         original_valid_until = now + timedelta(days=30)
         new_valid_until = now + timedelta(days=60)

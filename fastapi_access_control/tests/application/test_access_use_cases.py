@@ -39,32 +39,46 @@ class TestValidateAccessUseCase:
     
     @pytest.fixture
     def mock_card_repository(self):
-        """Mock card repository."""
+        """
+        Creates and returns a mocked asynchronous card repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_door_repository(self):
-        """Mock door repository."""
+        """
+        Provides a mocked asynchronous door repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_permission_repository(self):
-        """Mock permission repository."""
+        """
+        Creates and returns a mock asynchronous permission repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_user_repository(self):
-        """Mock user repository."""
+        """
+        Creates and returns a mocked asynchronous user repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_mqtt_service(self):
-        """Mock MQTT service."""
+        """
+        Creates and returns a mocked asynchronous MQTT service for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_device_communication_service(self):
-        """Mock device communication service."""
+        """
+        Creates a mock asynchronous device communication service for testing.
+        
+        The returned mock service simulates publishing access responses and sending unlock or lock commands, always returning True for these operations.
+        """
         service = AsyncMock(spec=DeviceCommunicationService)
         service.publish_access_response = AsyncMock(return_value=True)
         service.send_unlock_command = AsyncMock(return_value=True)
@@ -74,7 +88,12 @@ class TestValidateAccessUseCase:
     @pytest.fixture
     def use_case(self, mock_card_repository, mock_door_repository, 
                  mock_permission_repository, mock_user_repository, mock_mqtt_service):
-        """Create ValidateAccessUseCase instance without device communication."""
+        """
+                 Creates a ValidateAccessUseCase instance without device communication.
+                 
+                 Returns:
+                     A ValidateAccessUseCase configured with the provided repositories and MQTT service.
+                 """
         return ValidateAccessUseCase(
             card_repository=mock_card_repository,
             door_repository=mock_door_repository,
@@ -87,7 +106,12 @@ class TestValidateAccessUseCase:
     def use_case_with_device_service(self, mock_card_repository, mock_door_repository, 
                                    mock_permission_repository, mock_user_repository, 
                                    mock_mqtt_service, mock_device_communication_service):
-        """Create ValidateAccessUseCase instance with device communication."""
+        """
+                                   Creates a ValidateAccessUseCase instance configured with device communication support.
+                                   
+                                   Returns:
+                                       A ValidateAccessUseCase initialized with the provided repositories, MQTT service, and device communication service.
+                                   """
         return ValidateAccessUseCase(
             card_repository=mock_card_repository,
             door_repository=mock_door_repository,
@@ -99,7 +123,12 @@ class TestValidateAccessUseCase:
     
     @pytest.fixture
     def sample_card(self):
-        """Sample active card."""
+        """
+        Creates and returns a sample active employee card for testing purposes.
+        
+        Returns:
+            Card: An active card instance with preset attributes for use in tests.
+        """
         return Card(
             id=TEST_CARD_ID_1,
             user_id=TEST_USER_ID_1,
@@ -116,7 +145,9 @@ class TestValidateAccessUseCase:
     
     @pytest.fixture
     def sample_door(self):
-        """Sample accessible door."""
+        """
+        Creates and returns a sample Door instance representing an active, accessible door for testing purposes.
+        """
         return Door(
             id=TEST_DOOR_ID_1,
             name="Main Entrance",
@@ -138,7 +169,12 @@ class TestValidateAccessUseCase:
     
     @pytest.fixture
     def sample_user(self):
-        """Sample active user."""
+        """
+        Creates and returns a sample active user entity for testing purposes.
+        
+        Returns:
+            User: An instance representing an active user with predefined attributes.
+        """
         return User(
             id=TEST_USER_ID_1,
             email="test@company.com",
@@ -153,7 +189,12 @@ class TestValidateAccessUseCase:
     
     @pytest.fixture
     def sample_permission(self):
-        """Sample active permission."""
+        """
+        Creates and returns a sample active permission entity for testing purposes.
+        
+        Returns:
+            Permission: An active permission instance with preset attributes for user, door, validity period, and access schedule.
+        """
         return Permission(
             id=TEST_PERMISSION_ID_1,
             user_id=TEST_USER_ID_1,
@@ -172,7 +213,9 @@ class TestValidateAccessUseCase:
     
     @pytest.mark.asyncio
     async def test_validate_access_card_not_found(self, use_case, mock_card_repository):
-        """Test validation when card is not found."""
+        """
+        Tests that validating access raises CardNotFoundError when the card does not exist.
+        """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = None
         
@@ -182,7 +225,9 @@ class TestValidateAccessUseCase:
     
     @pytest.mark.asyncio
     async def test_validate_access_card_inactive(self, use_case, mock_card_repository, sample_card):
-        """Test validation when card is inactive."""
+        """
+        Tests that access validation raises InvalidCardError when the card is inactive.
+        """
         # Arrange
         sample_card.status = CardStatus.SUSPENDED
         mock_card_repository.get_by_card_id.return_value = sample_card
@@ -194,7 +239,9 @@ class TestValidateAccessUseCase:
     @pytest.mark.asyncio
     async def test_validate_access_door_not_found(self, use_case, mock_card_repository, 
                                                    mock_door_repository, sample_card):
-        """Test validation when door is not found."""
+        """
+                                                   Tests that DoorNotFoundError is raised when the specified door does not exist during access validation.
+                                                   """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = None
@@ -206,7 +253,9 @@ class TestValidateAccessUseCase:
     @pytest.mark.asyncio
     async def test_validate_access_door_not_accessible(self, use_case, mock_card_repository,
                                                         mock_door_repository, sample_card, sample_door):
-        """Test validation when door is not accessible."""
+        """
+                                                        Tests that access validation raises InvalidDoorError when the door is not accessible.
+                                                        """
         # Arrange
         sample_door.status = DoorStatus.MAINTENANCE
         mock_card_repository.get_by_card_id.return_value = sample_card
@@ -220,7 +269,9 @@ class TestValidateAccessUseCase:
     async def test_validate_access_user_not_found(self, use_case, mock_card_repository,
                                                    mock_door_repository, mock_user_repository,
                                                    sample_card, sample_door):
-        """Test validation when user is not found."""
+        """
+                                                   Tests that access validation raises UserNotFoundError when the user associated with the card does not exist.
+                                                   """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -249,7 +300,9 @@ class TestValidateAccessUseCase:
     async def test_validate_access_master_card_success(self, use_case, mock_card_repository,
                                                         mock_door_repository, mock_user_repository,
                                                         sample_card, sample_door, sample_user):
-        """Test successful validation with master card."""
+        """
+                                                        Tests that access is granted when a master card is used, returning the correct result details.
+                                                        """
         # Arrange
         sample_card.card_type = CardType.MASTER
         mock_card_repository.get_by_card_id.return_value = sample_card
@@ -273,7 +326,9 @@ class TestValidateAccessUseCase:
                                                   mock_door_repository, mock_user_repository,
                                                   mock_permission_repository,
                                                   sample_card, sample_door, sample_user):
-        """Test validation when user has no permission."""
+        """
+                                                  Tests that access validation raises AccessDeniedError when the user lacks permission for the door.
+                                                  """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -290,7 +345,11 @@ class TestValidateAccessUseCase:
                                                            mock_permission_repository,
                                                            sample_card, sample_door, sample_user,
                                                            sample_permission):
-        """Test successful validation with regular card and permission."""
+        """
+                                                           Tests that access is granted for a regular card with valid permission.
+                                                           
+                                                           Verifies that the use case returns an access granted result with correct card type, user, door, and permission details when all entities are valid and permission is present.
+                                                           """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -316,7 +375,11 @@ class TestValidateAccessUseCase:
                                                  mock_door_repository, mock_user_repository,
                                                  mock_permission_repository,
                                                  sample_card, sample_door, sample_user):
-        """Test validation when PIN is required for high-security door."""
+        """
+                                                 Tests that access validation denies entry and requires a PIN when a high-security door is accessed without a PIN.
+                                                 
+                                                 Ensures that the result indicates access is not granted, a PIN is required, and the denial reason includes a PIN requirement.
+                                                 """
         # Arrange
         sample_door.security_level = SecurityLevel.CRITICAL
         mock_card_repository.get_by_card_id.return_value = sample_card
@@ -338,7 +401,9 @@ class TestValidateAccessUseCase:
                                                 mock_door_repository, mock_user_repository,
                                                 mock_permission_repository,
                                                 sample_card, sample_door, sample_user):
-        """Test validation with invalid PIN."""
+        """
+                                                Tests that access validation raises AccessDeniedError when an invalid PIN is provided for a high-security door.
+                                                """
         # Arrange
         sample_door.security_level = SecurityLevel.HIGH
         mock_card_repository.get_by_card_id.return_value = sample_card
@@ -377,7 +442,11 @@ class TestValidateAccessUseCase:
     @pytest.mark.asyncio
     async def test_log_access_attempt_called(self, use_case, mock_card_repository,
                                               mock_mqtt_service, sample_card):
-        """Test that access attempts are logged via MQTT."""
+        """
+                                              Verifies that an access attempt is logged via MQTT when access is denied due to a missing card.
+                                              
+                                              Ensures the MQTT service records the attempt with the correct topic and payload reflecting the denied result.
+                                              """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = None
         
@@ -403,32 +472,46 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     
     @pytest.fixture
     def mock_card_repository(self):
-        """Mock card repository."""
+        """
+        Creates and returns a mocked asynchronous card repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_door_repository(self):
-        """Mock door repository."""
+        """
+        Provides a mocked asynchronous door repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_permission_repository(self):
-        """Mock permission repository."""
+        """
+        Creates and returns a mock asynchronous permission repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_user_repository(self):
-        """Mock user repository."""
+        """
+        Creates and returns a mocked asynchronous user repository for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_mqtt_service(self):
-        """Mock MQTT service."""
+        """
+        Creates and returns a mocked asynchronous MQTT service for testing purposes.
+        """
         return AsyncMock()
     
     @pytest.fixture
     def mock_device_communication_service(self):
-        """Mock device communication service."""
+        """
+        Creates a mock asynchronous device communication service for testing.
+        
+        The returned mock service simulates publishing access responses and sending unlock or lock commands, always returning True for these operations.
+        """
         service = AsyncMock(spec=DeviceCommunicationService)
         service.publish_access_response = AsyncMock(return_value=True)
         service.send_unlock_command = AsyncMock(return_value=True)
@@ -439,7 +522,12 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     def use_case_with_devices(self, mock_card_repository, mock_door_repository, 
                             mock_permission_repository, mock_user_repository, 
                             mock_mqtt_service, mock_device_communication_service):
-        """Create ValidateAccessUseCase instance with device communication."""
+        """
+                            Creates a ValidateAccessUseCase instance configured with device communication.
+                            
+                            Returns:
+                                A ValidateAccessUseCase initialized with the provided repositories, MQTT service, and device communication service.
+                            """
         return ValidateAccessUseCase(
             card_repository=mock_card_repository,
             door_repository=mock_door_repository,
@@ -451,7 +539,12 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     
     @pytest.fixture
     def sample_card(self):
-        """Sample active card."""
+        """
+        Creates and returns a sample active employee card for testing purposes.
+        
+        Returns:
+            Card: An active card instance with preset attributes for use in tests.
+        """
         return Card(
             id=TEST_CARD_ID_1,
             user_id=TEST_USER_ID_1,
@@ -468,7 +561,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     
     @pytest.fixture
     def sample_master_card(self):
-        """Sample master card."""
+        """
+        Returns a sample master card entity with active status for testing purposes.
+        """
         return Card(
             id=TEST_CARD_ID_2,
             user_id=TEST_USER_ID_1,
@@ -485,7 +580,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     
     @pytest.fixture
     def sample_door(self):
-        """Sample accessible door."""
+        """
+        Creates and returns a sample Door instance representing an active, accessible door for testing purposes.
+        """
         return Door(
             id=TEST_DOOR_ID_1,
             name="Main Entrance",
@@ -507,7 +604,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     
     @pytest.fixture
     def sample_critical_door(self):
-        """Sample critical security door."""
+        """
+        Creates and returns a sample Door instance representing a critical security door requiring a PIN for access.
+        """
         return Door(
             id=TEST_DOOR_ID_2,
             name="Server Room",
@@ -529,7 +628,12 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     
     @pytest.fixture
     def sample_user(self):
-        """Sample active user."""
+        """
+        Creates and returns a sample active user entity for testing purposes.
+        
+        Returns:
+            User: An instance representing an active user with predefined attributes.
+        """
         return User(
             id=TEST_USER_ID_1,
             email="test@example.com",
@@ -548,7 +652,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                      mock_user_repository, mock_permission_repository,
                                                      mock_device_communication_service,
                                                      sample_card, sample_door, sample_user):
-        """Test successful access with device response and unlock command."""
+        """
+                                                     Tests that access is granted when all conditions are met, and verifies that the device communication service sends both an access granted response and an unlock command to the specified device.
+                                                     """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -586,7 +692,10 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                   mock_user_repository,
                                                   mock_device_communication_service,
                                                   sample_master_card, sample_door, sample_user):
-        """Test master card access with device response."""
+        """
+                                                  Tests that access is granted for a master card and verifies that the device communication
+                                                  service sends both an access response and an unlock command to the device.
+                                                  """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_master_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -621,7 +730,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                     mock_user_repository, mock_permission_repository,
                                                     mock_device_communication_service,
                                                     sample_card, sample_door, sample_user):
-        """Test access denied with device response."""
+        """
+                                                    Tests that access is denied when the user lacks permission, and verifies that a denial response is sent to the device without triggering an unlock command.
+                                                    """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -651,7 +762,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                    mock_user_repository, mock_permission_repository,
                                                    mock_device_communication_service,
                                                    sample_card, sample_critical_door, sample_user):
-        """Test PIN required with device response."""
+        """
+                                                   Verifies that when a critical door requiring a PIN is accessed, the use case denies access and sends a device response indicating that a PIN is required, without sending an unlock command.
+                                                   """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_critical_door
@@ -683,7 +796,11 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
     async def test_card_not_found_with_device_response(self, use_case_with_devices,
                                                      mock_card_repository,
                                                      mock_device_communication_service):
-        """Test card not found with device response."""
+        """
+                                                     Tests that when a card is not found, an access denial response is sent to the device and an EntityNotFoundError is raised.
+                                                     
+                                                     Verifies that the device communication service publishes an access denial response with the appropriate reason.
+                                                     """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = None
         device_id = "door_lock_001"
@@ -706,7 +823,11 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                 mock_user_repository, mock_permission_repository,
                                                 mock_device_communication_service,
                                                 sample_card, sample_door, sample_user):
-        """Test that no MQTT response is sent when device_id is not provided."""
+        """
+                                                Verifies that no device communication occurs when validating access without a device ID.
+                                                
+                                                Ensures that access is granted and no MQTT responses or unlock commands are sent when the device ID is not provided during access validation.
+                                                """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -732,7 +853,11 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                         mock_user_repository, mock_permission_repository,
                                                         mock_device_communication_service,
                                                         sample_card, sample_door, sample_user):
-        """Test handling of device communication failures."""
+        """
+                                                        Tests that access validation succeeds even if device communication methods raise exceptions.
+                                                        
+                                                        Simulates failures in device communication during access validation and verifies that such failures do not prevent access from being granted. Ensures that the use case attempts to communicate with the device, but exceptions in these methods do not propagate or affect the result.
+                                                        """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_door
@@ -765,7 +890,9 @@ class TestValidateAccessUseCaseWithMqttDevicesCommunication:
                                                      mock_user_repository, mock_permission_repository,
                                                      mock_device_communication_service,
                                                      sample_card, sample_critical_door, sample_user):
-        """Test successful access with PIN and device response."""
+        """
+                                                     Tests that access is granted with a valid PIN for a critical door, and verifies that the device communication service sends both an access response and an unlock command to the device.
+                                                     """
         # Arrange
         mock_card_repository.get_by_card_id.return_value = sample_card
         mock_door_repository.get_by_id.return_value = sample_critical_door

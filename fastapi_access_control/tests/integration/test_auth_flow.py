@@ -17,7 +17,11 @@ class TestAuthenticationFlow:
         return TestClient(app)
     
     def test_complete_auth_flow_mock(self, client):
-        """Test complete authentication flow with mocked dependencies"""
+        """
+        Tests the complete authentication flow using mocked user repository and authentication service.
+        
+        Simulates a login request with valid credentials, verifies the response contains valid JWT access and refresh tokens, and checks the structure of the authentication response. Dependency overrides are used to inject mocks, and are cleared after the test.
+        """
         
         # Create mocks
         mock_repo = AsyncMock()
@@ -76,7 +80,11 @@ class TestAuthenticationFlow:
             client.app.dependency_overrides.clear()
     
     def test_login_validation_errors(self, client):
-        """Test login validation error responses"""
+        """
+        Verifies that the login endpoint returns validation errors for missing or invalid input.
+        
+        Sends POST requests to the login endpoint with missing fields, invalid email format, and too short password, asserting that each returns a 422 Unprocessable Entity status.
+        """
         
         # Test missing fields
         response = client.post("/api/v1/auth/login", json={})
@@ -97,7 +105,11 @@ class TestAuthenticationFlow:
         assert response.status_code == 422
     
     def test_unauthorized_access(self, client):
-        """Test accessing protected endpoints without token"""
+        """
+        Tests that access to protected endpoints is denied without a valid authentication token.
+        
+        Sends requests to a protected endpoint both without an authentication token and with an invalid token, asserting that both cases result in a 401 Unauthorized response.
+        """
         
         # Test doors endpoint without token (it requires authentication)
         response = client.get("/api/v1/doors/")
@@ -111,7 +123,11 @@ class TestAuthenticationFlow:
         assert response.status_code == 401
     
     def test_token_refresh_flow(self, client):
-        """Test token refresh functionality"""
+        """
+        Tests the token refresh endpoint to ensure a valid refresh token issues new access and refresh tokens.
+        
+        Creates a mock user repository and authentication service, injects them via FastAPI dependency overrides, and verifies that posting a valid refresh token returns a new access token and refresh token. Cleans up dependency overrides after the test.
+        """
         
         # Create mocks
         mock_repo = AsyncMock()
@@ -165,7 +181,11 @@ class TestRoleBasedAccess:
         return TestClient(app)
     
     def test_role_based_access_patterns(self):
-        """Test role-based access control patterns"""
+        """
+        Verifies that role-based access control methods on UserClaims correctly identify user roles.
+        
+        Tests that users with different roles are accurately recognized by has_role and has_any_role methods, ensuring proper distinction between admin and regular users.
+        """
         
         # Test admin user
         admin_claims = UserClaims(

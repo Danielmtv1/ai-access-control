@@ -3,7 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.middleware.security import RateLimitMiddleware, SecurityHeadersMiddleware
 
 def add_security_middleware(app: FastAPI):
-    """Agrega middlewares de seguridad a la aplicación."""
+    """
+    Adds security-related middleware to a FastAPI application.
+    
+    Configures CORS to allow all origins and credentials, applies rate limiting with specific documentation and metrics paths excluded, and sets permissive security headers including a Content Security Policy suitable for ReDoc documentation.
+    """
     
     # CORS
     app.add_middleware(

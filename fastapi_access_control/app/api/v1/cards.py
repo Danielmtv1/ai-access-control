@@ -81,7 +81,11 @@ async def create_card(
     user_repository: UserRepositoryPort = Depends(get_user_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Create a new access card"""
+    """
+    Creates a new access card for a user.
+    
+    Processes the provided card creation data and associates the new card with the specified user. Returns the created card's details. Raises an HTTP error if the card cannot be created due to domain constraints or validation issues.
+    """
     try:
         logger.info(f"Creating card {card_data.card_id} for user {card_data.user_id}")
         
@@ -115,7 +119,11 @@ async def get_card(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get a card by its database ID"""
+    """
+    Retrieves a card by its database UUID.
+    
+    Returns the card details if found; raises a 404 error if the card does not exist.
+    """
     try:
         get_card_use_case = GetCardUseCase(card_repository)
         card = await get_card_use_case.execute(card_id)
@@ -138,7 +146,18 @@ async def get_card_by_card_id(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get a card by its physical card ID"""
+    """
+    Retrieves a card using its physical card identifier.
+    
+    Args:
+        card_id: The physical identifier of the card (e.g., RFID).
+    
+    Returns:
+        CardResponse containing the card's details if found.
+    
+    Raises:
+        HTTPException: If the card does not exist or another error occurs.
+    """
     try:
         get_card_use_case = GetCardByCardIdUseCase(card_repository)
         card = await get_card_use_case.execute(card_id)
@@ -158,7 +177,15 @@ async def get_user_cards(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get all cards for a user"""
+    """
+    Retrieves all access cards associated with a specific user.
+    
+    Args:
+        user_id: The UUID of the user whose cards are to be retrieved.
+    
+    Returns:
+        A list of CardResponse objects representing the user's access cards.
+    """
     try:
         get_user_cards_use_case = GetUserCardsUseCase(card_repository)
         cards = await get_user_cards_use_case.execute(user_id)
@@ -179,7 +206,16 @@ async def list_cards(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """List cards with pagination"""
+    """
+    Retrieves a paginated list of access cards.
+    
+    Args:
+        skip: The number of cards to skip before starting to collect the result set.
+        limit: The maximum number of cards to return.
+    
+    Returns:
+        A CardListResponse containing the list of cards, total count, skip, and limit values.
+    """
     try:
         list_cards_use_case = ListCardsUseCase(card_repository)
         cards = await list_cards_use_case.execute(skip, limit)
@@ -209,7 +245,19 @@ async def update_card(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Update a card"""
+    """
+    Updates the details of an existing access card.
+    
+    Args:
+        card_id: The UUID of the card to update.
+        card_data: The new data for the card, including optional type, status, and validity.
+    
+    Returns:
+        The updated card information as a CardResponse.
+    
+    Raises:
+        An HTTPException if the card does not exist or if the update fails.
+    """
     try:
         logger.info(f"Updating card {card_id}")
         
@@ -239,7 +287,15 @@ async def deactivate_card(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Deactivate a card"""
+    """
+    Deactivates a card, preventing it from being used for access.
+    
+    Args:
+        card_id: The UUID of the card to deactivate.
+    
+    Returns:
+        The updated card information after deactivation.
+    """
     try:
         logger.info(f"Deactivating card {card_id}")
         
@@ -264,7 +320,15 @@ async def suspend_card(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Suspend a card"""
+    """
+    Suspends a card, temporarily disabling its access privileges.
+    
+    Args:
+        card_id: The UUID of the card to suspend.
+    
+    Returns:
+        The updated card information after suspension.
+    """
     try:
         logger.info(f"Suspending card {card_id}")
         
@@ -289,7 +353,12 @@ async def delete_card(
     card_repository: CardRepositoryPort = Depends(get_card_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Delete a card"""
+    """
+    Deletes a card identified by its UUID.
+    
+    Raises:
+        HTTPException: If the card does not exist or a domain error occurs.
+    """
     try:
         logger.info(f"Deleting card {card_id}")
         

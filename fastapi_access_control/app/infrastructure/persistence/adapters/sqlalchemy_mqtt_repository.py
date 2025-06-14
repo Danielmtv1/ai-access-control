@@ -41,7 +41,18 @@ class SqlAlchemyMqttMessageRepository(MqttMessageRepositoryPort):
             raise RepositoryError(f"Error getting MQTT messages: {str(e)}")
     
     async def get_by_topic(self, topic: str) -> List[MqttMessage]:
-        """Get MQTT messages by topic"""
+        """
+        Retrieves all MQTT messages for a given topic, ordered by descending timestamp.
+        
+        Args:
+            topic: The MQTT topic to filter messages by.
+        
+        Returns:
+            A list of MQTT messages associated with the specified topic, sorted from newest to oldest.
+        
+        Raises:
+            RepositoryError: If an error occurs during database access.
+        """
         try:
             async with self.session_factory() as session:
                 result = await session.execute(
@@ -55,7 +66,18 @@ class SqlAlchemyMqttMessageRepository(MqttMessageRepositoryPort):
             raise RepositoryError(f"Error getting MQTT messages by topic: {str(e)}")
     
     async def get_by_id(self, message_id: UUID) -> Optional[MqttMessage]:
-        """Get MQTT message by ID"""
+        """
+        Retrieves an MQTT message by its unique ID.
+        
+        Args:
+            message_id: The UUID of the MQTT message to retrieve.
+        
+        Returns:
+            The corresponding MqttMessage if found, or None if no message with the given ID exists.
+        
+        Raises:
+            RepositoryError: If an error occurs during database access.
+        """
         try:
             async with self.session_factory() as session:
                 result = await session.execute(

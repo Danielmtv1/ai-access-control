@@ -57,13 +57,25 @@ class CircuitBreakerState:
     is_open: bool = False
     
     def record_success(self):
-        """Record successful operation"""
+        """
+        Resets the circuit breaker state after a successful operation.
+        
+        Sets the failure count to zero, closes the circuit, and clears the last failure timestamp.
+        """
         self.failure_count = 0
         self.is_open = False
         self.last_failure_time = None
     
     def record_failure(self, threshold: int, timeout: int):
-        """Record failed operation and update circuit breaker state"""
+        """
+        Records a failed operation and updates the circuit breaker state.
+        
+        If the number of consecutive failures reaches or exceeds the specified threshold, the circuit breaker is opened to prevent further attempts until the timeout elapses.
+        
+        Args:
+            threshold: The number of failures required to open the circuit breaker.
+            timeout: The duration (in seconds) the circuit remains open before allowing new attempts.
+        """
         self.failure_count += 1
         self.last_failure_time = datetime.now(timezone.utc)
         
@@ -71,7 +83,17 @@ class CircuitBreakerState:
             self.is_open = True
     
     def can_attempt(self, timeout: int) -> bool:
-        """Check if circuit breaker allows new attempts"""
+        """
+        Determines whether a new connection attempt is permitted based on the circuit breaker state.
+        
+        If the circuit is open, allows a new attempt only after the specified timeout has elapsed since the last failure. Resets the circuit breaker if the timeout has passed.
+        
+        Args:
+            timeout: The minimum number of seconds to wait before allowing a new attempt after the circuit is opened.
+        
+        Returns:
+            True if a new attempt is allowed, False otherwise.
+        """
         if not self.is_open:
             return True
         
@@ -92,7 +114,11 @@ class MessageBuffer:
     max_size: int = 1000
     
     def add_message(self, topic: str, payload: str, qos: int = 1, retain: bool = False):
-        """Add message to buffer"""
+        """
+        Adds a message to the buffer, removing the oldest if the buffer is full.
+        
+        If the buffer has reached its maximum size, the oldest message is discarded to make room for the new one.
+        """
         if len(self.messages) >= self.max_size:
             # Remove oldest message to make room
             self.messages.popleft()
@@ -106,24 +132,41 @@ class MessageBuffer:
         })
     
     def get_buffered_messages(self) -> list:
-        """Get all buffered messages and clear buffer"""
+        """
+        Retrieves and clears all buffered messages.
+        
+        Returns:
+            A list of all messages that were buffered prior to this call.
+        """
         messages = list(self.messages)
         self.messages.clear()
         return messages
     
     def clear(self):
-        """Clear all buffered messages"""
+        """
+        Removes all messages from the buffer.
+        """
         self.messages.clear()
     
     @property
     def count(self) -> int:
-        """Get number of buffered messages"""
+        """
+        Returns the current number of messages stored in the buffer.
+        """
         return len(self.messages)
 
 class AiomqttAdapter(MqttClientPort):
     """Modern MQTT adapter with enhanced resilience patterns"""
     
     def __init__(self, message_handler: Callable[[str, str], None]):
+        """
+        Initializes the AiomqttAdapter with message handling, configuration, and resilience features.
+        
+        Args:
+            message_handler: Callback function to process incoming MQTT messages, accepting topic and payload as arguments.
+        
+        Initializes internal state, including MQTT client, connection state, subscriptions, configuration, circuit breaker, message buffer, health check timestamp, connection metrics, and reconnection control.
+        """
         self.message_handler = message_handler
         self._client: Optional[aiomqtt.Client] = None
         self._connection_state = ConnectionState.DISCONNECTED
@@ -141,7 +184,12 @@ class AiomqttAdapter(MqttClientPort):
         self._connection_attempts = 0
         
     def _build_config(self) -> MqttConfig:
-        """Build MQTT configuration from settings with resilience parameters"""
+        """
+        Constructs and returns an MQTT configuration object populated with connection and resilience parameters from application settings.
+        
+        Returns:
+            MqttConfig: An instance containing all MQTT connection and resilience settings, including host, port, credentials, TLS usage, keepalive, retry and circuit breaker parameters, message buffer size, and health check interval.
+        """
         settings = get_settings()
         
         # Generate deterministic client ID
@@ -173,7 +221,9 @@ class AiomqttAdapter(MqttClientPort):
     
     @property
     def is_connected(self) -> bool:
-        """Check if client is currently connected"""
+        """
+        Returns True if the MQTT client is currently connected and initialized.
+        """
         return (
             self._connection_state == ConnectionState.CONNECTED and 
             self._client is not None
@@ -181,7 +231,14 @@ class AiomqttAdapter(MqttClientPort):
     
     @property
     def connection_stats(self) -> Dict[str, Any]:
-        """Get connection statistics for monitoring"""
+        """
+        Returns a dictionary of current connection statistics and metrics for monitoring.
+        
+        The returned statistics include connection state, uptime, message counts, connection attempts, buffered message count, circuit breaker status, and active subscription count.
+         
+        Returns:
+            A dictionary containing connection state, uptime in seconds, total messages sent and received, connection attempts, number of buffered messages, circuit breaker status and failure count, and the number of active subscriptions.
+        """
         uptime = None
         if self._connection_start_time:
             uptime = (datetime.now(timezone.utc) - self._connection_start_time).total_seconds()
@@ -200,7 +257,12 @@ class AiomqttAdapter(MqttClientPort):
         }
     
     def _check_circuit_breaker(self) -> bool:
-        """Check if circuit breaker allows connection attempts"""
+        """
+        Determines whether connection attempts are permitted by the circuit breaker.
+        
+        Returns:
+            True if a connection attempt is allowed; False if the circuit breaker is open and blocking attempts.
+        """
         can_attempt = self._circuit_breaker.can_attempt(self._config.circuit_breaker_timeout)
         if not can_attempt:
             logger.warning(
@@ -211,7 +273,12 @@ class AiomqttAdapter(MqttClientPort):
         return can_attempt
     
     async def _create_client(self) -> aiomqtt.Client:
-        """Create and configure MQTT client with retry logic"""
+        """
+        Creates and configures an MQTT client instance based on the current adapter settings.
+        
+        Returns:
+            An initialized aiomqtt.Client configured with connection, authentication, and TLS parameters.
+        """
         logger.info("Creating MQTT client...")
         
         # TLS configuration
@@ -240,7 +307,11 @@ class AiomqttAdapter(MqttClientPort):
         return client
     
     async def connect_and_listen(self):
-        """Main connection and message listening loop with reconnection"""
+        """
+        Manages the MQTT connection lifecycle, including automatic reconnection, circuit breaker enforcement, message replay, and subscription restoration.
+        
+        Continuously attempts to connect to the MQTT broker while reconnection is enabled. Applies circuit breaker logic to prevent repeated failed attempts, uses exponential backoff on failures, and restores subscriptions and buffered messages upon successful reconnection. Handles connection errors, cancellation, and shutdown gracefully.
+        """
         logger.info("Starting MQTT connection and listen loop...")
         
         while self._should_reconnect:
@@ -329,7 +400,11 @@ class AiomqttAdapter(MqttClientPort):
         logger.info("MQTT connection loop ended")
     
     async def _message_loop(self):
-        """Main message processing loop"""
+        """
+        Continuously processes incoming MQTT messages from the client and dispatches them for handling.
+        
+        Iterates asynchronously over messages received from the MQTT broker, logging each message and passing it to the internal handler. Raises an exception if an MQTT error occurs.
+        """
         try:
             logger.info("Starting MQTT message loop...")
             async for message in self._client.messages:
@@ -340,7 +415,12 @@ class AiomqttAdapter(MqttClientPort):
             raise
     
     async def _handle_message(self, message: aiomqtt.Message):
-        """Handle incoming MQTT message safely with metrics"""
+        """
+        Processes an incoming MQTT message, updates metrics, and dispatches it to the message handler asynchronously.
+        
+        Args:
+            message: The received MQTT message to process.
+        """
         try:
             topic = str(message.topic)
             payload = message.payload.decode('utf-8', errors='replace')
@@ -373,7 +453,11 @@ class AiomqttAdapter(MqttClientPort):
             logger.error(f"Error in message handler for topic {topic}: {e}", exc_info=True)
     
     async def _restore_subscriptions(self):
-        """Restore all subscriptions after reconnection"""
+        """
+        Restores all previously subscribed topics after reconnecting to the MQTT broker.
+        
+        Attempts to resubscribe to each topic in the internal subscription set using the configured QoS level. Logs errors if any subscription fails.
+        """
         if not self._subscriptions:
             logger.debug("No subscriptions to restore")
             return
@@ -388,7 +472,20 @@ class AiomqttAdapter(MqttClientPort):
                 logger.error(f"Failed to restore subscription to {topic}: {e}")
     
     async def publish(self, topic: str, payload: str, qos: int = None, retain: bool = False):
-        """Publish message to MQTT broker with buffering for offline scenarios"""
+        """
+        Publishes a message to the MQTT broker, buffering it if offline or on failure.
+        
+        If the client is not connected, the message is added to an internal buffer for later delivery. If publishing fails due to an MQTT error, the message is also buffered and an exception is raised.
+        
+        Args:
+            topic: The MQTT topic to publish to.
+            payload: The message payload.
+            qos: The Quality of Service level for the message. If not specified, the default from configuration is used.
+            retain: Whether the message should be retained by the broker.
+        
+        Raises:
+            MqttAdapterError: If publishing fails while connected.
+        """
         qos = qos if qos is not None else self._config.qos
         
         if not self.is_connected:
@@ -424,7 +521,18 @@ class AiomqttAdapter(MqttClientPort):
             raise MqttAdapterError(f"Publish failed: {e}") from e
     
     async def subscribe(self, topic: str, qos: int = None):
-        """Subscribe to MQTT topic"""
+        """
+        Subscribes to a specified MQTT topic and manages subscription state.
+        
+        If the client is connected, attempts to subscribe immediately; otherwise, adds the topic to a pending subscriptions set for automatic restoration upon reconnection.
+        
+        Args:
+            topic: The MQTT topic to subscribe to.
+            qos: The Quality of Service level for the subscription. If not specified, uses the default from configuration.
+        
+        Raises:
+            MqttAdapterError: If the subscription attempt fails while connected.
+        """
         qos = qos if qos is not None else self._config.qos
         
         # Add to subscription set for reconnection
@@ -441,7 +549,11 @@ class AiomqttAdapter(MqttClientPort):
             logger.warning(f"Added {topic} to pending subscriptions (not connected)")
     
     async def unsubscribe(self, topic: str):
-        """Unsubscribe from MQTT topic"""
+        """
+        Unsubscribes from a specified MQTT topic.
+        
+        Removes the topic from the internal subscription set and, if connected, sends an unsubscribe request to the MQTT broker. Raises a MqttAdapterError if the unsubscribe operation fails.
+        """
         # Remove from subscription set
         self._subscriptions.discard(topic)
         
@@ -454,7 +566,11 @@ class AiomqttAdapter(MqttClientPort):
                 raise MqttAdapterError(f"Unsubscribe failed: {e}") from e
     
     async def _replay_buffered_messages(self):
-        """Replay messages that were buffered during connection outage"""
+        """
+        Attempts to publish all messages buffered during connection outages.
+        
+        Retrieves messages from the buffer and publishes them to their respective topics. Messages that fail to publish are re-buffered for future attempts.
+        """
         buffered_messages = self._message_buffer.get_buffered_messages()
         
         if not buffered_messages:
@@ -480,7 +596,12 @@ class AiomqttAdapter(MqttClientPort):
                 )
     
     async def perform_health_check(self) -> bool:
-        """Perform health check by sending heartbeat"""
+        """
+        Performs a health check by publishing a heartbeat message to a system topic.
+        
+        Returns:
+            True if the heartbeat message was published successfully; False otherwise.
+        """
         if not self.is_connected:
             return False
         
@@ -503,7 +624,11 @@ class AiomqttAdapter(MqttClientPort):
             return False
     
     async def disconnect(self):
-        """Gracefully disconnect from MQTT broker"""
+        """
+        Gracefully disconnects the client from the MQTT broker.
+        
+        Stops reconnection attempts, updates connection state, logs session statistics, clears subscriptions and buffered messages, and ensures a clean shutdown.
+        """
         logger.info("Starting graceful MQTT disconnect...")
         
         self._should_reconnect = False

@@ -61,7 +61,9 @@ async def test_save_message(repository, mock_session):
 
 @pytest.mark.asyncio
 async def test_get_all_messages(repository, mock_session):
-    """Test getting all messages"""
+    """
+    Tests that retrieving all messages from the repository returns a list of MqttMessage instances with expected IDs and content.
+    """
     # Create test models
     models = [
         MqttMessageModel(
@@ -95,7 +97,11 @@ async def test_get_all_messages(repository, mock_session):
 
 @pytest.mark.asyncio
 async def test_get_message_by_id(repository, mock_session):
-    """Test getting message by ID"""
+    """
+    Tests that retrieving a message by ID from the repository returns the correct MqttMessage instance.
+    
+    Verifies that the repository's get_by_id method returns a domain entity with expected attributes and that the session's execute method is called once.
+    """
     # Create test model
     model = MqttMessageModel(
         id=SAMPLE_CARD_UUID,
@@ -121,7 +127,11 @@ async def test_get_message_by_id(repository, mock_session):
 
 @pytest.mark.asyncio
 async def test_get_messages_by_topic(repository, mock_session):
-    """Test getting messages by topic"""
+    """
+    Tests that the repository retrieves all messages with a specified topic.
+    
+    Verifies that messages returned by get_by_topic have the correct topic and are instances of MqttMessage.
+    """
     # Create test models
     models = [
         MqttMessageModel(

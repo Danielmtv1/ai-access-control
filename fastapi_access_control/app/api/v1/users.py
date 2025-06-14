@@ -35,10 +35,21 @@ router = APIRouter(
 
 # Helper function to get auth service
 def get_auth_service():
+    """
+    Returns an instance of the authentication service.
+    """
     return AuthService()
 
 def _convert_to_response(user: User) -> UserResponse:
-    """Convert User entity to UserResponse"""
+    """
+    Converts a User domain entity to a UserResponse schema.
+    
+    Args:
+        user: The User domain entity to convert.
+    
+    Returns:
+        A UserResponse schema representing the given user.
+    """
     return UserResponse.from_entity(user)
 
 @router.post("/", 
@@ -52,7 +63,11 @@ async def create_user(
     user_repository: UserRepositoryPort = Depends(get_user_repository),
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Create a new user"""
+    """
+    Creates a new user account with the specified details.
+    
+    Only admin users are permitted to create new users. The created user is returned as a response object.
+    """
     try:
         # Check if current user has permission to create users (admin only)
         if not current_user.can_access_admin_panel():
@@ -90,7 +105,19 @@ async def list_users(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Get a paginated list of users"""
+    """
+    Retrieves a paginated list of users with optional filtering by status, role, or search term.
+    
+    Args:
+        status: Optional filter to include only users with the specified status.
+        role: Optional filter to include only users with the specified role.
+        search: Optional search string to match against user names or emails.
+        page: Page number for pagination.
+        size: Number of users per page.
+    
+    Returns:
+        A UserListResponse containing the list of users and pagination details.
+    """
     try:
         use_case = ListUsersUseCase(user_repository)
         
@@ -125,7 +152,11 @@ async def get_user_stats(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Get user statistics"""
+    """
+    Retrieves aggregated statistics about users, such as counts by status and role.
+    
+    Requires the current user to have device management permissions (admin or operator). Returns a summary of user statistics.
+    """
     try:
         # Check if current user has permission to view stats (admin or operator)
         if not current_user.can_manage_devices():
@@ -152,7 +183,11 @@ async def get_user(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Get a user by ID"""
+    """
+    Retrieves a user by their unique ID.
+    
+    Allows users to view their own profile or, if the requester has admin privileges, any user's profile. Returns the user's information as a response schema.
+    """
     try:
         # Users can view their own profile, or admins can view any profile
         if user_id != current_user.id and not current_user.can_access_admin_panel():
@@ -179,7 +214,11 @@ async def get_user_by_email(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Get a user by email"""
+    """
+    Retrieves a user by email address.
+    
+    Allows users to access their own profile or admins to access any user's profile. Returns the user information as a response schema.
+    """
     try:
         # Users can view their own profile, or admins can view any profile
         if email != current_user.email and not current_user.can_access_admin_panel():
@@ -207,7 +246,11 @@ async def update_user(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Update a user"""
+    """
+    Updates a user's profile information.
+    
+    Allows users to update their own full name, while admins can update any user's full name, roles, and status. Non-admin users are restricted from modifying roles or status. Returns the updated user information.
+    """
     try:
         # Users can update their own profile (limited fields), or admins can update any profile
         if user_id != current_user.id and not current_user.can_access_admin_panel():
@@ -248,7 +291,11 @@ async def delete_user(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Delete a user"""
+    """
+    Permanently deletes a user account by UUID.
+    
+    Only admin users can perform this action. Users cannot delete their own accounts. Raises an HTTP error if deletion fails or if permissions are insufficient.
+    """
     try:
         # Only admin users can delete users
         if not current_user.can_access_admin_panel():
@@ -286,7 +333,11 @@ async def suspend_user(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Suspend a user account"""
+    """
+    Suspends a user account by marking it as inactive.
+    
+    Only admin users can perform this action, and users cannot suspend their own accounts. Returns the suspended user's information.
+    """
     try:
         # Only admin users can suspend users
         if not current_user.can_access_admin_panel():
@@ -320,7 +371,11 @@ async def activate_user(
     current_user: User = Depends(get_current_active_user),
     user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
-    """Activate a user account"""
+    """
+    Activates a suspended or inactive user account by user ID.
+    
+    Only admin users are permitted to activate user accounts. Returns the activated user's information.
+    """
     try:
         # Only admin users can activate users
         if not current_user.can_access_admin_panel():
@@ -349,7 +404,11 @@ async def change_password(
     user_repository: UserRepositoryPort = Depends(get_user_repository),
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Change user password"""
+    """
+    Changes the password for a user account.
+    
+    Allows users to change their own password, or admins to change any user's password. Returns the updated user information.
+    """
     try:
         # Users can change their own password, or admins can change any password
         if user_id != current_user.id and not current_user.can_access_admin_panel():

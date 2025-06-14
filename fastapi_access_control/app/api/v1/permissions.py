@@ -41,7 +41,14 @@ router = APIRouter(
 )
 
 def _convert_to_response(permission: Permission) -> PermissionResponse:
-    """Convert Permission entity to PermissionResponse"""
+    """
+    Converts a Permission domain entity into a PermissionResponse schema.
+    
+    Parses the access_schedule field from a JSON string to a Python object if present. If parsing fails, sets access_schedule to None.
+    
+    Returns:
+        A PermissionResponse object representing the permission.
+    """
     # Parse access_schedule if it's a JSON string
     access_schedule = None
     if permission.access_schedule:
@@ -79,7 +86,15 @@ async def create_permission(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     card_repository: CardRepositoryPort = Depends(get_card_repository)
 ):
-    """Create a new permission"""
+    """
+    Creates a new access permission based on the provided request data.
+    
+    Args:
+        request: The details of the permission to create, including user, door, card, validity period, access schedule, and PIN requirement.
+    
+    Returns:
+        The created permission in response format.
+    """
     try:
         use_case = CreatePermissionUseCase(
             permission_repository, user_repository, door_repository, card_repository
@@ -119,7 +134,14 @@ async def list_permissions(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Get a paginated list of permissions"""
+    """
+    Retrieves a paginated list of permissions with optional filtering.
+    
+    Filters can be applied by user, door, card, status, creator, validity, and expiration. Returns a paginated response containing the matching permissions and pagination metadata.
+    
+    Returns:
+        A PermissionListResponse containing the list of permissions and pagination details.
+    """
     try:
         use_case = ListPermissionsUseCase(permission_repository)
         
@@ -159,7 +181,11 @@ async def get_permission(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Get a permission by ID"""
+    """
+    Retrieves a permission by its unique ID.
+    
+    Returns the permission details in response format. Raises an HTTP exception if the permission is not found or an error occurs.
+    """
     try:
         use_case = GetPermissionUseCase(permission_repository)
         permission = await use_case.execute(permission_id)
@@ -180,7 +206,16 @@ async def update_permission(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Update a permission"""
+    """
+    Updates an existing permission with new status, validity period, access schedule, or PIN requirement.
+    
+    Args:
+        permission_id: The unique identifier of the permission to update.
+        request: The update details including status, validity, access schedule, or PIN requirement.
+    
+    Returns:
+        The updated permission in response format.
+    """
     try:
         use_case = UpdatePermissionUseCase(permission_repository)
         
@@ -208,7 +243,12 @@ async def delete_permission(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Delete a permission"""
+    """
+    Permanently deletes a permission by its ID.
+    
+    Raises:
+        HTTPException: If the permission could not be deleted or an error occurs.
+    """
     try:
         use_case = DeletePermissionUseCase(permission_repository)
         success = await use_case.execute(permission_id)
@@ -232,7 +272,11 @@ async def revoke_permission(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Revoke a permission (soft delete)"""
+    """
+    Revokes a permission by setting its status to suspended.
+    
+    Performs a soft delete of the specified permission and returns the updated permission in response format.
+    """
     try:
         use_case = RevokePermissionUseCase(permission_repository)
         permission = await use_case.execute(permission_id)
@@ -252,7 +296,15 @@ async def get_user_permissions(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Get all permissions for a user"""
+    """
+    Retrieves all access permissions associated with a specific user.
+    
+    Args:
+        user_id: The unique identifier of the user whose permissions are to be fetched.
+    
+    Returns:
+        A list of PermissionResponse objects representing the user's permissions.
+    """
     try:
         use_case = GetUserPermissionsUseCase(permission_repository)
         permissions = await use_case.execute(user_id)
@@ -272,7 +324,15 @@ async def get_door_permissions(
     current_user: User = Depends(get_current_active_user),
     permission_repository: PermissionRepositoryPort = Depends(get_permission_repository)
 ):
-    """Get all permissions for a door"""
+    """
+    Retrieves all access permissions associated with a specific door.
+    
+    Args:
+        door_id: The unique identifier of the door.
+    
+    Returns:
+        A list of permission responses for the specified door.
+    """
     try:
         use_case = GetDoorPermissionsUseCase(permission_repository)
         permissions = await use_case.execute(door_id)
@@ -296,7 +356,11 @@ async def bulk_create_permissions(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     card_repository: CardRepositoryPort = Depends(get_card_repository)
 ):
-    """Create multiple permissions in bulk"""
+    """
+    Creates multiple permissions in a single bulk operation.
+    
+    Processes a list of permission creation requests, returning a summary of successfully created permissions, failed entries, and counts for requested, created, and failed permissions.
+    """
     try:
         use_case = BulkCreatePermissionsUseCase(
             permission_repository, user_repository, door_repository, card_repository

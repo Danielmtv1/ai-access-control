@@ -18,6 +18,11 @@ class SqlAlchemyDoorRepository(DoorRepositoryPort):
         self.session_factory = session_factory
     
     async def create(self, door: Door) -> Door:
+        """
+        Creates a new door record in the database and returns the persisted domain entity.
+        
+        If a database error occurs, the transaction is rolled back and a RepositoryError is raised.
+        """
         async with self.session_factory() as db:
             try:
                 door_model = DoorMapper.to_model(door)
@@ -35,6 +40,18 @@ class SqlAlchemyDoorRepository(DoorRepositoryPort):
                 raise RepositoryError(f"Error creating door: {e}") from e
     
     async def get_by_id(self, door_id: UUID) -> Optional[Door]:
+        """
+        Retrieves a door entity by its unique UUID.
+        
+        Args:
+            door_id: The UUID of the door to retrieve.
+        
+        Returns:
+            The corresponding Door entity if found, otherwise None.
+        
+        Raises:
+            RepositoryError: If a database error occurs during retrieval.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -74,6 +91,15 @@ class SqlAlchemyDoorRepository(DoorRepositoryPort):
                 raise RepositoryError(f"Error getting doors: {e}") from e
     
     async def update(self, door: Door) -> Door:
+        """
+        Updates an existing door record in the database.
+        
+        Raises:
+            RepositoryError: If the door does not exist or a database error occurs.
+        
+        Returns:
+            The updated Door entity.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -95,6 +121,18 @@ class SqlAlchemyDoorRepository(DoorRepositoryPort):
                 raise RepositoryError(f"Error updating door: {e}") from e
     
     async def delete(self, door_id: UUID) -> bool:
+        """
+        Deletes a door by its UUID.
+        
+        Args:
+            door_id: The UUID of the door to delete.
+        
+        Returns:
+            True if the door was found and deleted, False if no door with the given UUID exists.
+        
+        Raises:
+            RepositoryError: If a database error occurs during deletion.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(

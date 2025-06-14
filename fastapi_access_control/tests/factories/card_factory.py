@@ -14,11 +14,18 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def get_entity_class(cls):
+        """
+        Returns the Card entity class.
+        """
         return Card
     
     @classmethod
     def build(cls, **kwargs) -> Dict[str, Any]:
-        """Build card attributes with sensible defaults."""
+        """
+        Builds a dictionary of card attributes with default values for testing or entity creation.
+        
+        Default values include generated UUIDs for the card and user, a standard card type, active status, a one-year validity period, and current timestamps. Any provided keyword arguments override the defaults.
+        """
         defaults = {
             'id': cls.generate_uuid('card'),
             'card_id': cls.generate_card_id('CARD'),
@@ -35,12 +42,25 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create(cls, **kwargs) -> Card:
-        """Create a Card entity."""
+        """
+        Creates a Card domain entity with default or customized attributes.
+        
+        Additional keyword arguments can be provided to override default values for the card's properties.
+        Returns:
+            A Card entity instance.
+        """
         return cls.create_entity(**kwargs)
     
     @classmethod
     def create_master(cls, **kwargs) -> Card:
-        """Create a master card."""
+        """
+        Creates a master card entity with type MASTER and a 10-year validity period.
+        
+        Additional attributes can be overridden by providing keyword arguments.
+        
+        Returns:
+            A Card instance representing a master card.
+        """
         master_defaults = {
             'card_id': cls.generate_card_id('MASTER'),
             'card_type': CardType.MASTER,
@@ -50,7 +70,11 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_temporary(cls, **kwargs) -> Card:
-        """Create a temporary card."""
+        """
+        Creates a temporary card entity with a validity period of one week.
+        
+        Additional attributes can be overridden by providing keyword arguments.
+        """
         temporary_defaults = {
             'card_id': cls.generate_card_id('TEMP'),
             'card_type': CardType.TEMPORARY,
@@ -60,7 +84,11 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_visitor(cls, **kwargs) -> Card:
-        """Create a visitor card."""
+        """
+        Creates a visitor card entity with default attributes for a visitor card.
+        
+        Additional attributes can be provided to override the defaults.
+        """
         visitor_defaults = {
             'card_id': cls.generate_card_id('VISITOR'),
             'card_type': CardType.VISITOR,
@@ -70,7 +98,11 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_inactive(cls, **kwargs) -> Card:
-        """Create an inactive card."""
+        """
+        Creates a card entity with inactive status.
+        
+        Any additional attributes can be provided via keyword arguments to override defaults.
+        """
         inactive_defaults = {
             'status': CardStatus.INACTIVE,
             'card_id': cls.generate_card_id('INACTIVE')
@@ -79,7 +111,13 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_suspended(cls, **kwargs) -> Card:
-        """Create a suspended card."""
+        """
+        Creates a card entity with suspended status.
+        
+        Any provided keyword arguments override the default suspended attributes.
+        Returns:
+            A Card instance with status set to SUSPENDED.
+        """
         suspended_defaults = {
             'status': CardStatus.SUSPENDED,
             'card_id': cls.generate_card_id('SUSPENDED')
@@ -88,7 +126,11 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_lost(cls, **kwargs) -> Card:
-        """Create a lost card."""
+        """
+        Creates a card entity with status set to lost.
+        
+        Additional attributes can be provided to override the defaults.
+        """
         lost_defaults = {
             'status': CardStatus.LOST,
             'card_id': cls.generate_card_id('LOST')
@@ -97,7 +139,11 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_expired(cls, **kwargs) -> Card:
-        """Create an expired card."""
+        """
+        Creates a card entity with an expiration date set 30 days in the past.
+        
+        Additional attributes can be provided to override the defaults.
+        """
         expired_defaults = {
             'card_id': cls.generate_card_id('EXPIRED'),
             'valid_until': cls.past_time(30)  # Expired 30 days ago
@@ -106,7 +152,15 @@ class CardFactory(EntityFactory):
     
     @classmethod
     def create_for_user(cls, user_id: UUID, **kwargs) -> Card:
-        """Create a card for a specific user."""
+        """
+        Creates a card entity associated with the specified user ID.
+        
+        Args:
+            user_id: The UUID of the user to associate with the card.
+        
+        Returns:
+            A Card entity linked to the given user.
+        """
         user_defaults = {'user_id': user_id}
         return cls.create(**cls.merge_kwargs(user_defaults, kwargs))
 
@@ -116,11 +170,18 @@ class CardModelFactory(DatabaseFactory):
     
     @classmethod
     def get_model_class(cls):
+        """
+        Returns the CardModel class associated with this factory.
+        """
         return CardModel
     
     @classmethod
     def build(cls, **kwargs) -> Dict[str, Any]:
-        """Build card model attributes with sensible defaults."""
+        """
+        Builds a dictionary of card model attributes with default values for testing.
+        
+        Keyword arguments can be provided to override any default attribute.
+        """
         defaults = {
             'id': cls.generate_uuid('card'),
             'card_id': cls.generate_card_id('CARD'),
@@ -137,12 +198,20 @@ class CardModelFactory(DatabaseFactory):
     
     @classmethod
     def create(cls, **kwargs) -> CardModel:
-        """Create a CardModel instance."""
+        """
+        Creates a CardModel instance with default or overridden attributes.
+        
+        Additional keyword arguments can be provided to override default values for the card model fields.
+        """
         return cls.create_model(**kwargs)
     
     @classmethod
     def create_master(cls, **kwargs) -> CardModel:
-        """Create a master card model."""
+        """
+        Creates a CardModel instance representing a master card with a 10-year validity period.
+        
+        Additional attributes can be overridden by providing keyword arguments.
+        """
         master_defaults = {
             'card_id': cls.generate_card_id('MASTER'),
             'card_type': 'master',
@@ -152,7 +221,14 @@ class CardModelFactory(DatabaseFactory):
     
     @classmethod
     def create_temporary(cls, **kwargs) -> CardModel:
-        """Create a temporary card model."""
+        """
+        Creates a temporary card model with type 'temporary' and a validity period of 7 days.
+        
+        Additional attributes can be overridden by providing keyword arguments.
+        
+        Returns:
+            A CardModel instance representing a temporary card.
+        """
         temporary_defaults = {
             'card_id': cls.generate_card_id('TEMP'),
             'card_type': 'temporary',
@@ -162,7 +238,11 @@ class CardModelFactory(DatabaseFactory):
     
     @classmethod
     def create_inactive(cls, **kwargs) -> CardModel:
-        """Create an inactive card model."""
+        """
+        Creates a card model instance with status set to 'inactive'.
+        
+        Additional attributes can be provided to override the defaults.
+        """
         inactive_defaults = {
             'status': 'inactive',
             'card_id': cls.generate_card_id('INACTIVE')
@@ -171,7 +251,11 @@ class CardModelFactory(DatabaseFactory):
     
     @classmethod
     def create_suspended(cls, **kwargs) -> CardModel:
-        """Create a suspended card model."""
+        """
+        Creates a suspended card model instance with status set to 'suspended'.
+        
+        Additional attributes can be provided to override the defaults.
+        """
         suspended_defaults = {
             'status': 'suspended',
             'card_id': cls.generate_card_id('SUSPENDED')
@@ -180,13 +264,29 @@ class CardModelFactory(DatabaseFactory):
     
     @classmethod
     def create_for_user(cls, user_id: UUID, **kwargs) -> CardModel:
-        """Create a card model for a specific user."""
+        """
+        Creates a CardModel instance associated with the specified user ID.
+        
+        Args:
+            user_id: The UUID of the user to associate with the card model.
+        
+        Returns:
+            A CardModel instance linked to the given user.
+        """
         user_defaults = {'user_id': user_id}
         return cls.create(**cls.merge_kwargs(user_defaults, kwargs))
     
     @classmethod
     def create_batch(cls, count: int, **kwargs) -> list[CardModel]:
-        """Create multiple card models."""
+        """
+        Creates a list of card model instances with optional attribute overrides.
+        
+        Args:
+            count: The number of card model instances to create.
+        
+        Returns:
+            A list containing the created CardModel instances.
+        """
         return [cls.create(**kwargs) for _ in range(count)]
 
 

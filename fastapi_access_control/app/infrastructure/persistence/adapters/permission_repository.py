@@ -23,11 +23,21 @@ class PermissionRepository(PermissionRepositoryPort):
     """SQLAlchemy implementation of Permission repository with consistent session management."""
     
     def __init__(self, session_factory: Callable[[], AsyncSession]):
+        """
+        Initializes the PermissionRepository with a session factory and a permission mapper.
+        
+        Args:
+            session_factory: A callable that returns a new AsyncSession instance for database operations.
+        """
         self.session_factory = session_factory
         self.mapper = PermissionMapper()
     
     async def create(self, permission: Permission) -> Permission:
-        """Create a new permission."""
+        """
+        Creates a new permission record in the database.
+        
+        Converts the provided domain permission entity to a database model, persists it, and returns the newly created permission with its generated ID. Rolls back and raises a RepositoryError if a database error occurs.
+        """
         async with self.session_factory() as session:
             try:
                 model = self.mapper.to_model(permission)
@@ -47,7 +57,18 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to create permission: {e}") from e
     
     async def get_by_id(self, permission_id: UUID) -> Optional[Permission]:
-        """Get permission by ID."""
+        """
+        Retrieves a permission by its unique identifier.
+        
+        Args:
+            permission_id: The UUID of the permission to retrieve.
+        
+        Returns:
+            The corresponding Permission entity if found, otherwise None.
+        
+        Raises:
+            RepositoryError: If a database error occurs during retrieval.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(PermissionModel.id == permission_id)
@@ -61,7 +82,16 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get permission: {e}") from e
     
     async def get_by_user_and_door_list(self, user_id: UUID, door_id: UUID) -> List[Permission]:
-        """Get permissions for user and door."""
+        """
+        Retrieves all permissions for a specific user and door combination.
+        
+        Args:
+            user_id: The unique identifier of the user.
+            door_id: The unique identifier of the door.
+        
+        Returns:
+            A list of Permission entities associated with the given user and door.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(
@@ -80,7 +110,11 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get permissions: {e}") from e
     
     async def get_by_user_and_door(self, user_id: UUID, door_id: UUID) -> Optional[Permission]:
-        """Get single permission for user and door."""
+        """
+        Retrieves a single permission for a specific user and door.
+        
+        Returns the corresponding Permission entity if found, or None if no matching permission exists.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(
@@ -99,7 +133,15 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get permission: {e}") from e
     
     async def get_by_user_id(self, user_id: UUID) -> List[Permission]:
-        """Get all permissions for a user."""
+        """
+        Retrieves all permissions associated with a specific user.
+        
+        Args:
+            user_id: The unique identifier of the user.
+        
+        Returns:
+            A list of Permission entities belonging to the user.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(PermissionModel.user_id == user_id)
@@ -113,7 +155,15 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get permissions: {e}") from e
     
     async def get_by_door_id(self, door_id: UUID) -> List[Permission]:
-        """Get all permissions for a door."""
+        """
+        Retrieves all permissions associated with a specific door.
+        
+        Args:
+            door_id: The unique identifier of the door.
+        
+        Returns:
+            A list of Permission entities linked to the given door.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(PermissionModel.door_id == door_id)
@@ -127,7 +177,17 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get permissions: {e}") from e
     
     async def get_by_card_id(self, card_id: UUID) -> List[Permission]:
-        """Get all permissions for a card."""
+        """
+        Retrieves all permissions associated with a specific card ID.
+        
+        The card ID is assumed to be linked to a user, and all permissions for that user are returned.
+        
+        Args:
+            card_id: The unique identifier of the card.
+        
+        Returns:
+            A list of Permission entities associated with the card.
+        """
         async with self.session_factory() as session:
             try:
                 # Join with user model to get permissions by card
@@ -146,7 +206,15 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get permissions: {e}") from e
     
     async def update(self, permission: Permission) -> Permission:
-        """Update an existing permission."""
+        """
+        Updates an existing permission entity in the database.
+        
+        Raises:
+            RepositoryError: If the permission does not exist or a database error occurs.
+        
+        Returns:
+            The updated permission entity.
+        """
         async with self.session_factory() as session:
             try:
                 # Get existing model
@@ -171,7 +239,18 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to update permission: {e}") from e
     
     async def delete(self, permission_id: UUID) -> bool:
-        """Delete a permission."""
+        """
+        Deletes a permission by its ID.
+        
+        Args:
+            permission_id: The unique identifier of the permission to delete.
+        
+        Returns:
+            True if the permission was deleted, False if not found.
+        
+        Raises:
+            RepositoryError: If a database error occurs during deletion.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(PermissionModel.id == permission_id)
@@ -193,7 +272,16 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to delete permission: {e}") from e
     
     async def list_permissions(self, skip: int = 0, limit: int = 100) -> List[Permission]:
-        """List permissions with pagination."""
+        """
+        Retrieves a paginated list of permissions.
+        
+        Args:
+            skip: Number of records to skip before starting to collect the result set.
+            limit: Maximum number of permissions to return.
+        
+        Returns:
+            A list of Permission entities within the specified range.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).offset(skip).limit(limit)
@@ -207,7 +295,12 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to list permissions: {e}") from e
     
     async def get_active_permissions(self) -> List[Permission]:
-        """Get all active permissions."""
+        """
+        Retrieves all permissions with an active status.
+        
+        Returns:
+            A list of Permission entities that are currently marked as active.
+        """
         async with self.session_factory() as session:
             try:
                 query = select(PermissionModel).where(PermissionModel.status == "active")
@@ -221,7 +314,23 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to get active permissions: {e}") from e
     
     async def check_access(self, user_id: UUID, door_id: UUID, current_time: time, current_day: str) -> bool:
-        """Check if user has access to door at current time and day."""
+        """
+        Determines if a user has active permission to access a specific door at a given time and day.
+        
+        Checks for an active permission record matching the user and door, with validity constraints on time. Returns True if such a permission exists, otherwise False.
+        
+        Args:
+            user_id: The unique identifier of the user.
+            door_id: The unique identifier of the door.
+            current_time: The current time to check against permission validity.
+            current_day: The current day (not used in filtering but may be relevant for future logic).
+        
+        Returns:
+            True if the user has access to the door at the specified time and day, otherwise False.
+        
+        Raises:
+            RepositoryError: If a database error occurs during the access check.
+        """
         async with self.session_factory() as session:
             try:
                 # Complex query for access validation

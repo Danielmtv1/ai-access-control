@@ -8,42 +8,107 @@ class PermissionRepositoryPort(ABC):
     
     @abstractmethod
     async def create(self, permission: Permission) -> Permission:
-        """Create a new permission"""
+        """
+        Creates a new permission entity.
+        
+        Args:
+            permission: The permission object to be created.
+        
+        Returns:
+            The created Permission instance.
+        """
         pass
     
     @abstractmethod
     async def get_by_id(self, permission_id: UUID) -> Optional[Permission]:
-        """Get permission by ID"""
+        """
+        Retrieves a permission by its unique identifier.
+        
+        Args:
+            permission_id: The UUID of the permission to retrieve.
+        
+        Returns:
+            The Permission object if found, otherwise None.
+        """
         pass
     
     @abstractmethod
     async def get_by_user_and_door_list(self, user_id: UUID, door_id: UUID) -> List[Permission]:
-        """Get permissions for user and door"""
+        """
+        Retrieves all permissions assigned to a specific user for a given door.
+        
+        Args:
+            user_id: Unique identifier of the user.
+            door_id: Unique identifier of the door.
+        
+        Returns:
+            A list of Permission objects associated with the user and door.
+        """
         pass
     
     @abstractmethod
     async def get_by_user_id(self, user_id: UUID) -> List[Permission]:
-        """Get all permissions for a user"""
+        """
+        Retrieves all permissions assigned to a specific user.
+        
+        Args:
+            user_id: Unique identifier of the user.
+        
+        Returns:
+            A list of Permission objects associated with the given user.
+        """
         pass
     
     @abstractmethod
     async def get_by_door_id(self, door_id: UUID) -> List[Permission]:
-        """Get all permissions for a door"""
+        """
+        Retrieves all permissions associated with a specific door.
+        
+        Args:
+            door_id: The unique identifier of the door.
+        
+        Returns:
+            A list of Permission objects linked to the specified door.
+        """
         pass
     
     @abstractmethod
     async def get_by_card_id(self, card_id: UUID) -> List[Permission]:
-        """Get all permissions for a card"""
+        """
+        Retrieves all permissions associated with a specific card.
+        
+        Args:
+            card_id: The unique identifier of the card.
+        
+        Returns:
+            A list of Permission objects linked to the given card.
+        """
         pass
     
     @abstractmethod
     async def update(self, permission: Permission) -> Permission:
-        """Update existing permission"""
+        """
+        Updates an existing permission entity.
+        
+        Args:
+            permission: The permission object with updated fields.
+        
+        Returns:
+            The updated permission entity.
+        """
         pass
     
     @abstractmethod
     async def delete(self, permission_id: UUID) -> bool:
-        """Delete permission by ID"""
+        """
+        Deletes a permission identified by its unique ID.
+        
+        Args:
+            permission_id: The UUID of the permission to delete.
+        
+        Returns:
+            True if the permission was successfully deleted, False otherwise.
+        """
         pass
     
     @abstractmethod
@@ -57,7 +122,23 @@ class PermissionRepositoryPort(ABC):
                              expired_only: Optional[bool] = None,
                              limit: int = 100,
                              offset: int = 0) -> List[Permission]:
-        """List permissions with filters and pagination"""
+        """
+                             Retrieves a list of permissions filtered by user, door, card, status, creator, validity, or expiration, with pagination support.
+                             
+                             Args:
+                                 user_id: Filter by user identifier.
+                                 door_id: Filter by door identifier.
+                                 card_id: Filter by card identifier.
+                                 status: Filter by permission status.
+                                 created_by: Filter by creator identifier.
+                                 valid_only: If True, include only currently valid permissions.
+                                 expired_only: If True, include only expired permissions.
+                                 limit: Maximum number of permissions to return.
+                                 offset: Number of permissions to skip before starting to collect the result set.
+                             
+                             Returns:
+                                 A list of permissions matching the specified filters and pagination parameters.
+                             """
         pass
     
     @abstractmethod
@@ -69,20 +150,59 @@ class PermissionRepositoryPort(ABC):
                               created_by: Optional[UUID] = None,
                               valid_only: Optional[bool] = None,
                               expired_only: Optional[bool] = None) -> int:
-        """Count permissions matching filters"""
+        """
+                              Counts the number of permissions matching the specified filters.
+                              
+                              Args:
+                                  user_id: Filter by user identifier.
+                                  door_id: Filter by door identifier.
+                                  card_id: Filter by card identifier.
+                                  status: Filter by permission status.
+                                  created_by: Filter by creator identifier.
+                                  valid_only: If True, count only currently valid permissions.
+                                  expired_only: If True, count only expired permissions.
+                              
+                              Returns:
+                                  The number of permissions that match the provided filters.
+                              """
         pass
     
     @abstractmethod
     async def get_active_permissions(self) -> List[Permission]:
-        """Get all active permissions"""
+        """
+        Retrieves all currently active permissions.
+        
+        Returns:
+            A list of Permission objects that are currently valid and active.
+        """
         pass
     
     @abstractmethod
     async def check_access(self, user_id: UUID, door_id: UUID, current_time: time, current_day: str) -> bool:
-        """Check if user has access to door at the given time and day"""
+        """
+        Checks whether a user has access to a specified door at a given time and day.
+        
+        Args:
+            user_id: Unique identifier of the user.
+            door_id: Unique identifier of the door.
+            current_time: The time at which access is being checked.
+            current_day: The day of the week or date for access evaluation.
+        
+        Returns:
+            True if the user has access to the door at the specified time and day, otherwise False.
+        """
         pass
     
     @abstractmethod
     async def get_by_user_and_door(self, user_id: UUID, door_id: UUID) -> Optional[Permission]:
-        """Get permission for specific user and door combination"""
+        """
+        Retrieves the permission assigned to a specific user for a specific door.
+        
+        Args:
+            user_id: Unique identifier of the user.
+            door_id: Unique identifier of the door.
+        
+        Returns:
+            The permission object if found, otherwise None.
+        """
         pass

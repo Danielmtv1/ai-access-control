@@ -27,7 +27,12 @@ from app.domain.entities.device_message import (
 
 @pytest.fixture
 def mock_device_service():
-    """Mock device communication service."""
+    """
+    Creates a mock instance of the device communication service with mocked parsing and notification methods for testing purposes.
+    
+    Returns:
+        A mock DeviceCommunicationService with all parsing methods and broadcast_notification mocked.
+    """
     service = Mock(spec=DeviceCommunicationService)
     service.parse_device_request = Mock()
     service.parse_command_acknowledgment = Mock()
@@ -39,14 +44,21 @@ def mock_device_service():
 
 @pytest.fixture
 def mock_access_use_case():
-    """Mock access validation use case."""
+    """
+    Creates an asynchronous mock instance of the access validation use case for testing.
+    """
     use_case = AsyncMock(spec=ValidateAccessUseCase)
     return use_case
 
 
 @pytest.fixture
 def mock_mqtt_service():
-    """Mock MQTT message service."""
+    """
+    Creates a mock instance of the MQTT message service for testing.
+    
+    Returns:
+        An asynchronous mock of MqttMessageService with a mocked process_message method.
+    """
     service = AsyncMock(spec=MqttMessageService)
     service.process_message = AsyncMock()
     return service
@@ -54,7 +66,12 @@ def mock_mqtt_service():
 
 @pytest.fixture
 def device_handler(mock_device_service, mock_access_use_case, mock_mqtt_service):
-    """MQTT device handler with mocked dependencies."""
+    """
+    Creates an instance of MqttDeviceHandler with mocked service dependencies for testing.
+    
+    Returns:
+        An MqttDeviceHandler configured with the provided mock services.
+    """
     return MqttDeviceHandler(
         device_communication_service=mock_device_service,
         access_validation_use_case=mock_access_use_case,
@@ -80,7 +97,11 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_access_request_valid_topic(self, device_handler, mock_device_service, mock_access_use_case):
-        """Test handling valid access request."""
+        """
+        Tests that a valid access request message is correctly parsed and triggers access validation.
+        
+        Verifies that the device request is parsed from the topic and payload, and that the access validation use case is executed with the expected parameters.
+        """
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
@@ -127,7 +148,11 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_access_request_parsing_failure(self, device_handler, mock_device_service, mock_access_use_case):
-        """Test handling access request when parsing fails."""
+        """
+        Tests that when parsing an access request fails, validation is not attempted.
+        
+        Simulates a parsing failure for an access request topic and verifies that the access validation use case is not called.
+        """
         topic = "access/requests/door_lock_001"
         payload = "invalid json"
         
@@ -142,7 +167,9 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_access_request_validation_failure(self, device_handler, mock_device_service, mock_access_use_case):
-        """Test handling access request when validation fails."""
+        """
+        Tests that when access validation fails during handling of an access request, the exception is caught and does not propagate, while both parsing and validation methods are called.
+        """
         topic = "access/requests/door_lock_001"
         payload = json.dumps({"card_id": "ABC123", "door_id": str(TEST_DOOR_ID_1)})
         
@@ -162,7 +189,11 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_command_acknowledgment(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling command acknowledgment."""
+        """
+        Verifies that command acknowledgment messages are correctly parsed and logged.
+        
+        This test ensures that when a command acknowledgment message is received, the handler parses the acknowledgment and logs both the general message and the acknowledgment audit entry.
+        """
         topic = "access/commands/door_lock_001/ack"
         payload = json.dumps({
             "message_id": str(uuid4()),
@@ -188,7 +219,9 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_command_acknowledgment_failed_command(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling failed command acknowledgment."""
+        """
+        Tests that a failed command acknowledgment is handled by logging both the acknowledgment and an additional alert message.
+        """
         topic = "access/commands/door_lock_001/ack"
         payload = json.dumps({
             "message_id": str(uuid4()),
@@ -212,7 +245,11 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_device_status_healthy(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling healthy device status."""
+        """
+        Tests that a healthy device status message is handled correctly.
+        
+        Verifies that the device status is parsed, no alerts are triggered, and both the general message and device status are logged.
+        """
         topic = "access/devices/door_lock_001/status"
         payload = json.dumps({
             "online": True,
@@ -238,7 +275,9 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_device_status_unhealthy(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling unhealthy device status."""
+        """
+        Tests that the handler processes an unhealthy device status message by logging the general message, device status, and a health alert when the device reports an error state and low battery.
+        """
         topic = "access/devices/door_lock_001/status"
         payload = json.dumps({
             "online": True,
@@ -264,7 +303,9 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_device_event_info_level(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling info-level device event."""
+        """
+        Tests that an info-level device event is handled by parsing the event and logging both the general message and the event, without triggering critical handling.
+        """
         topic = "access/events/door_opened/door_lock_001"
         payload = json.dumps({
             "details": {"card_id": "ABC123"},
@@ -284,7 +325,11 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_device_event_critical_door_forced(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling critical door forced event."""
+        """
+        Tests that a critical 'door forced' device event is handled by logging messages and broadcasting a critical security notification.
+        
+        Verifies that the event is parsed, appropriate messages are logged, and a broadcast notification is sent with the correct alert content and severity.
+        """
         topic = "access/events/door_forced/door_lock_001"
         payload = json.dumps({
             "severity": "critical",
@@ -309,7 +354,11 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_device_event_critical_tamper(self, device_handler, mock_device_service, mock_mqtt_service):
-        """Test handling critical tamper event."""
+        """
+        Tests that a critical tamper alert event is handled by broadcasting a security alert notification.
+        
+        Verifies that when a critical tamper event message is received, the handler parses the event, triggers a broadcast notification with the correct alert content, and includes the expected severity level.
+        """
         topic = "access/events/tamper_alert/door_lock_001"
         payload = json.dumps({
             "severity": "critical",
@@ -333,7 +382,9 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_invalid_topic_structure(self, device_handler, mock_mqtt_service):
-        """Test handling message with invalid topic structure."""
+        """
+        Tests that messages with an invalid topic structure are only logged and not further processed.
+        """
         topic = "invalid"
         payload = "test payload"
         
@@ -344,7 +395,9 @@ class TestMqttDeviceHandler:
     
     @pytest.mark.asyncio
     async def test_handle_non_access_topic(self, device_handler, mock_mqtt_service):
-        """Test handling message with non-access topic."""
+        """
+        Tests that messages with non-access topics are only logged and not further processed.
+        """
         topic = "system/health/check"
         payload = "test payload"
         
@@ -374,7 +427,11 @@ class TestTopicRouting:
     
     @pytest.mark.asyncio
     async def test_route_access_request_topic(self, device_handler, mock_device_service):
-        """Test routing of access request topic."""
+        """
+        Tests that access request topics are routed to the device request parser.
+        
+        Verifies that when an access request topic is received, the `parse_device_request` method is called with the correct topic and payload, even if parsing fails.
+        """
         topic = "access/requests/door_lock_001"
         payload = json.dumps({"card_id": "ABC123", "door_id": str(TEST_DOOR_ID_1)})
         
@@ -386,7 +443,11 @@ class TestTopicRouting:
     
     @pytest.mark.asyncio
     async def test_route_command_ack_topic(self, device_handler, mock_device_service):
-        """Test routing of command acknowledgment topic."""
+        """
+        Tests that command acknowledgment topics are routed to the command acknowledgment parser.
+        
+        Verifies that when a message with a command acknowledgment topic is received, the device handler calls `parse_command_acknowledgment` with the correct topic and payload.
+        """
         topic = "access/commands/door_lock_001/ack"
         payload = json.dumps({"message_id": str(uuid4()), "status": "success"})
         
@@ -398,7 +459,11 @@ class TestTopicRouting:
     
     @pytest.mark.asyncio
     async def test_route_device_status_topic(self, device_handler, mock_device_service):
-        """Test routing of device status topic."""
+        """
+        Tests that device status topics are correctly routed to the device status parser.
+        
+        Verifies that when a device status message is received, the `parse_device_status` method of the device service is called with the appropriate topic and payload.
+        """
         topic = "access/devices/door_lock_001/status"
         payload = json.dumps({"online": True, "door_state": "locked"})
         
@@ -410,7 +475,11 @@ class TestTopicRouting:
     
     @pytest.mark.asyncio
     async def test_route_device_event_topic_with_type(self, device_handler, mock_device_service):
-        """Test routing of device event topic with type."""
+        """
+        Tests that device event topics containing an explicit event type are routed to the device event parser.
+        
+        Verifies that when a topic includes an event type, the `parse_device_event` method is called with the correct arguments.
+        """
         topic = "access/events/door_opened/door_lock_001"
         payload = json.dumps({"severity": "info"})
         
@@ -422,7 +491,9 @@ class TestTopicRouting:
     
     @pytest.mark.asyncio
     async def test_route_device_event_topic_without_type(self, device_handler, mock_device_service):
-        """Test routing of device event topic without type."""
+        """
+        Tests that device event topics without an explicit event type in the topic are routed to the device event parser.
+        """
         topic = "access/events/door_lock_001"
         payload = json.dumps({"event_type": "door_opened", "severity": "info"})
         
@@ -434,7 +505,9 @@ class TestTopicRouting:
     
     @pytest.mark.asyncio
     async def test_ignore_incomplete_access_topics(self, device_handler, mock_device_service):
-        """Test that incomplete access topics are ignored."""
+        """
+        Verifies that messages with incomplete or malformed access-related topics are ignored and do not trigger any parsing methods.
+        """
         incomplete_topics = [
             "access",
             "access/requests",
@@ -471,7 +544,9 @@ class TestLoggingFunctionality:
     
     @pytest.mark.asyncio
     async def test_log_message_failure(self, device_handler, mock_mqtt_service):
-        """Test message logging failure handling."""
+        """
+        Tests that message logging failures in _log_message are handled without raising exceptions.
+        """
         topic = "test/topic"
         payload = "test payload"
         
@@ -484,7 +559,11 @@ class TestLoggingFunctionality:
     
     @pytest.mark.asyncio
     async def test_log_command_acknowledgment(self, device_handler, mock_mqtt_service):
-        """Test logging command acknowledgment."""
+        """
+        Tests that command acknowledgment logging creates an audit message with the correct topic and content.
+        
+        Verifies that the `_log_command_acknowledgment` method logs a message to the expected audit topic with JSON data reflecting the acknowledgment details.
+        """
         ack = CommandAcknowledgment(
             message_id=str(uuid4()),
             device_id="door_lock_001",
@@ -532,7 +611,11 @@ class TestLoggingFunctionality:
     
     @pytest.mark.asyncio
     async def test_log_device_event(self, device_handler, mock_mqtt_service):
-        """Test logging device event."""
+        """
+        Verifies that device events are logged with the correct topic and message content.
+        
+        Ensures that the `_log_device_event` method logs a device event to the expected audit topic, and that the logged message contains accurate event details.
+        """
         event = DeviceEvent.create_door_opened("door_lock_001", "ABC123")
         
         await device_handler._log_device_event(event)

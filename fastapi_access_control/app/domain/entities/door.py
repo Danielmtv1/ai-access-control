@@ -89,11 +89,19 @@ class Door:
         return self.security_level in [SecurityLevel.HIGH, SecurityLevel.CRITICAL]
     
     def requires_master_access(self) -> bool:
-        """Business logic: Critical security level requires master card"""
+        """
+        Returns True if the door requires master access due to a critical security level.
+        
+        A door requires master access only when its security level is set to CRITICAL.
+        """
         return self.security_level == SecurityLevel.CRITICAL
     
     def record_successful_access(self, user_id: UUID) -> None:
-        """Business logic: Record successful access"""
+        """
+        Records a successful access event for the door.
+        
+        Resets failed attempt counters and lockout status, and updates the last access and modification timestamps.
+        """
         self.last_access = datetime.now()
         self.failed_attempts = 0
         self.locked_until = None
@@ -130,7 +138,11 @@ class Door:
         self.updated_at = datetime.now()
     
     def activate(self) -> None:
-        """Business logic: Activate door"""
+        """
+        Activates the door by setting its status to ACTIVE and resetting failed access attempts.
+        
+        Also updates the door's last modified timestamp.
+        """
         self.status = DoorStatus.ACTIVE
         self.reset_failed_attempts()
         self.updated_at = datetime.now()

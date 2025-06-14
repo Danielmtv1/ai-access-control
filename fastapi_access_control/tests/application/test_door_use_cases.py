@@ -23,7 +23,11 @@ class TestCreateDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_create_door_success(self, create_door_use_case, mock_door_repository):
-        """Test successful door creation"""
+        """
+        Verifies that a door can be successfully created when no door with the same name exists.
+        
+        Asserts that the created door has the expected properties and that the repository methods for checking name uniqueness and creating the door are called appropriately.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Mock door name doesn't exist
@@ -99,7 +103,11 @@ class TestCreateDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_create_door_with_schedule(self, create_door_use_case, mock_door_repository):
-        """Test door creation with access schedule"""
+        """
+        Tests that a door can be created with an access schedule.
+        
+        Verifies that when a new door is created with schedule data, the resulting door includes the specified access schedule and the repository's create method is called.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Mock door name doesn't exist
@@ -157,7 +165,11 @@ class TestGetDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_get_door_success(self, get_door_use_case, mock_door_repository):
-        """Test successful door retrieval"""
+        """
+        Verifies that a door can be successfully retrieved by its identifier using the GetDoorUseCase.
+        
+        Asserts that the returned door matches the expected entity and that the repository is called with the correct identifier.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         expected_door = Door(
             id=SAMPLE_DOOR_UUID,
@@ -178,7 +190,9 @@ class TestGetDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_get_door_not_found(self, get_door_use_case, mock_door_repository):
-        """Test door retrieval when door doesn't exist"""
+        """
+        Tests that retrieving a non-existent door by identifier raises DoorNotFoundError.
+        """
         mock_door_repository.get_by_id.return_value = None
         
         with pytest.raises(DoorNotFoundError, match="Door with identifier '999' not found"):
@@ -199,7 +213,11 @@ class TestUpdateDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_update_door_success(self, update_door_use_case, mock_door_repository):
-        """Test successful door update"""
+        """
+        Tests that updating a door with valid data succeeds and returns the updated door entity.
+        
+        Verifies that the door repository is called to fetch the original door, checks for name conflicts, and updates the door with new details. Asserts that the returned door reflects the updated name and security level.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
             id=SAMPLE_DOOR_UUID,
@@ -240,7 +258,9 @@ class TestUpdateDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_update_door_not_found(self, update_door_use_case, mock_door_repository):
-        """Test door update when door doesn't exist"""
+        """
+        Tests that updating a non-existent door raises a DoorNotFoundError and does not attempt an update.
+        """
         mock_door_repository.get_by_id.return_value = None
         
         with pytest.raises(DoorNotFoundError, match="Door with identifier '999' not found"):
@@ -251,7 +271,9 @@ class TestUpdateDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_update_door_name_conflict(self, update_door_use_case, mock_door_repository):
-        """Test door update fails when new name already exists for another door"""
+        """
+        Tests that updating a door fails with EntityAlreadyExistsError when the new name is already used by another door.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
             id=SAMPLE_DOOR_UUID,
@@ -340,7 +362,11 @@ class TestSetDoorStatusUseCase:
     
     @pytest.mark.asyncio
     async def test_set_door_status_emergency_open(self, set_door_status_use_case, mock_door_repository):
-        """Test setting door status to emergency open"""
+        """
+        Tests that setting a door's status to emergency open updates the status correctly.
+        
+        Verifies that the use case retrieves the door, updates its status to emergency open, and persists the change in the repository.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
             id=SAMPLE_DOOR_UUID,
@@ -386,7 +412,11 @@ class TestListDoorsUseCase:
     
     @pytest.mark.asyncio
     async def test_list_doors_success(self, list_doors_use_case, mock_door_repository):
-        """Test successful door listing"""
+        """
+        Tests that listing doors returns the expected list of door entities.
+        
+        Verifies that the use case retrieves the correct number of doors with expected names and that the repository is called with the correct pagination parameters.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         doors = [
             Door(
@@ -433,7 +463,11 @@ class TestGetActiveDoorsUseCase:
     
     @pytest.mark.asyncio
     async def test_get_active_doors_success(self, get_active_doors_use_case, mock_door_repository):
-        """Test successful active doors retrieval"""
+        """
+        Tests that active doors are successfully retrieved using the GetActiveDoorsUseCase.
+        
+        Asserts that the returned list contains only doors with active status and verifies the repository method is called once.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         active_doors = [
             Door(
@@ -469,7 +503,11 @@ class TestDeleteDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_delete_door_success(self, delete_door_use_case, mock_door_repository):
-        """Test successful door deletion"""
+        """
+        Tests that a door is successfully deleted when it exists in the repository.
+        
+        Verifies that the delete operation returns True and that the repository's get and delete methods are called with the correct identifier.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         existing_door = Door(
             id=SAMPLE_DOOR_UUID,
@@ -493,7 +531,9 @@ class TestDeleteDoorUseCase:
     
     @pytest.mark.asyncio
     async def test_delete_door_not_found(self, delete_door_use_case, mock_door_repository):
-        """Test door deletion when door doesn't exist"""
+        """
+        Tests that deleting a non-existent door raises a DoorNotFoundError and does not call the delete method.
+        """
         mock_door_repository.get_by_id.return_value = None
         
         with pytest.raises(DoorNotFoundError, match="Door with identifier .* not found"):

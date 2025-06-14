@@ -44,7 +44,14 @@ class CardMapper:
     
     @staticmethod
     def update_model_from_domain(model: CardModel, card: Card) -> CardModel:
-        """Actualiza un modelo de base de datos con los datos de una entidad de dominio"""
+        """
+        Updates a CardModel instance with data from a Card domain entity.
+        
+        All relevant fields are copied from the Card entity to the CardModel, including converting enum fields to their values. The updated_at timestamp is set to the current datetime.
+        
+        Returns:
+            The updated CardModel instance.
+        """
         model.card_id = card.card_id
         model.user_id = card.user_id
         model.card_type = card.card_type.value

@@ -31,7 +31,9 @@ from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_
 
 @pytest.fixture
 def mock_mqtt_adapter():
-    """Mock MQTT adapter for integration testing."""
+    """
+    Provides an asynchronous mock MQTT adapter with a mocked publish method for integration tests.
+    """
     adapter = AsyncMock()
     adapter.publish = AsyncMock()
     return adapter
@@ -39,7 +41,12 @@ def mock_mqtt_adapter():
 
 @pytest.fixture
 def mock_repositories():
-    """Mock repositories for testing."""
+    """
+    Provides asynchronous mock repositories and services for use in integration tests.
+    
+    Returns:
+        A dictionary containing AsyncMock instances for card, door, user, and permission repositories, as well as the MQTT service.
+    """
     card_repo = AsyncMock()
     door_repo = AsyncMock()
     user_repo = AsyncMock()
@@ -57,7 +64,12 @@ def mock_repositories():
 
 @pytest.fixture
 def sample_entities():
-    """Sample entities for testing."""
+    """
+    Creates and returns sample user, card, door, and permission entities for testing.
+    
+    Returns:
+        dict: A dictionary containing sample 'user', 'card', 'door', and 'permission' entities with realistic attributes and timestamps.
+    """
     user_id = UUID("550e8400-e29b-41d4-a716-446655440000")
     card_id = UUID("550e8400-e29b-41d4-a716-446655440001")
     
@@ -119,7 +131,11 @@ def sample_entities():
 
 @pytest.fixture
 def integrated_system(mock_mqtt_adapter, mock_repositories):
-    """Fully integrated MQTT device communication system."""
+    """
+    Constructs and returns a fully integrated MQTT device communication system for testing.
+    
+    Combines a device communication service, access validation use case, and MQTT device handler using provided mock MQTT adapter and repositories. Returns all key components in a dictionary for use in integration tests.
+    """
     # Create device communication service
     device_service = DeviceCommunicationService(mock_mqtt_adapter)
     
@@ -153,7 +169,11 @@ class TestMqttDeviceIntegration:
     """Integration tests for complete MQTT device communication flow."""
     @pytest.mark.asyncio
     async def test_complete_access_granted_flow(self, integrated_system, sample_entities):
-        """Test complete flow from device request to unlock command."""
+        """
+        Tests the end-to-end flow for a successful device access request resulting in an unlock command.
+        
+        Simulates a device sending an access request with valid credentials, mocks repository responses to grant access, processes the request, and verifies that access validation and MQTT publish calls occur as expected. Asserts that both an access granted response and an unlock command with correct payloads are published.
+        """
         system = integrated_system
         entities = sample_entities
         
@@ -215,7 +235,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_complete_access_denied_flow(self, integrated_system, sample_entities):
-        """Test complete flow for denied access."""
+        """
+        Tests the complete access denial flow for a device access request.
+        
+        Simulates an access request where the user does not have permission, verifies that the system publishes an access denial response with the correct payload and denial reason.
+        """
         system = integrated_system
         entities = sample_entities
         
@@ -257,7 +281,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_master_card_access_flow(self, integrated_system, sample_entities):
-        """Test master card access flow."""
+        """
+        Tests the access flow when a master card is used.
+        
+        Simulates an access request with a master card and verifies that permission checks are bypassed. Asserts that the system publishes an access granted response indicating master card usage and includes the appropriate reason.
+        """
         system = integrated_system
         entities = sample_entities
         
@@ -315,7 +343,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_pin_required_flow(self, integrated_system, sample_entities):
-        """Test PIN required flow for high-security door."""
+        """
+        Tests that an access request to a high-security (critical) door without a PIN results in an access denial response requiring PIN entry.
+        
+        Simulates a request to a critical door, verifies that the system responds with a denial indicating that a PIN is required, and checks the response payload for correct fields and reason.
+        """
         system = integrated_system
         entities = sample_entities
         
@@ -368,7 +400,9 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_command_acknowledgment_flow(self, integrated_system):
-        """Test command acknowledgment processing."""
+        """
+        Verifies that a successful command acknowledgment message removes the command from pending commands and triggers processing by the MQTT service.
+        """
         system = integrated_system
         
         # Create and track a command
@@ -397,7 +431,9 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_failed_command_acknowledgment_flow(self, integrated_system):
-        """Test failed command acknowledgment processing."""
+        """
+        Tests processing of a failed command acknowledgment, ensuring the command is removed from pending commands and that failure handling triggers appropriate message processing.
+        """
         system = integrated_system
         
         # Create and track a command
@@ -425,7 +461,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_device_status_monitoring_flow(self, integrated_system):
-        """Test device status monitoring and health alerts."""
+        """
+        Simulates device status monitoring and verifies health alert generation for unhealthy status.
+        
+        Processes a healthy device status message and confirms that only status logging occurs. Then processes an unhealthy status message (low battery) and asserts that a health alert is triggered and logged by the MQTT service.
+        """
         system = integrated_system
         
         # Simulate healthy device status
@@ -463,7 +503,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_critical_security_event_flow(self, integrated_system):
-        """Test critical security event handling."""
+        """
+        Tests that a critical security event, such as a forced door entry, triggers a broadcast notification with the correct severity and alert message.
+        
+        Simulates a door forced event, processes it through the device handler, and verifies that a broadcast notification is published containing a security alert with critical severity and relevant event details.
+        """
         system = integrated_system
         
         # Simulate door forced event
@@ -497,7 +541,9 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_tamper_detection_flow(self, integrated_system):
-        """Test tamper detection event handling."""
+        """
+        Tests handling of a tamper detection event and verifies that a critical security alert broadcast notification is published with appropriate message content and severity.
+        """
         system = integrated_system
         
         # Simulate tamper alert
@@ -531,7 +577,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_emergency_lockdown_flow(self, integrated_system):
-        """Test emergency lockdown functionality."""
+        """
+        Tests the emergency lockdown command flow and verifies correct MQTT message publication.
+        
+        Triggers an emergency lockdown with a specified reason, asserts that the device service processes the command successfully, and checks that a high-priority MQTT message is published to the correct topic with the expected payload fields.
+        """
         system = integrated_system
         
         reason = "Security breach detected in Building A"
@@ -560,7 +610,11 @@ class TestMqttDeviceIntegration:
     
     @pytest.mark.asyncio
     async def test_concurrent_device_requests(self, integrated_system, sample_entities):
-        """Test handling concurrent device requests."""
+        """
+        Tests the system's ability to handle multiple concurrent device access requests.
+        
+        Simulates five simultaneous access requests from different devices, verifies that repository methods are called for each request, and asserts that a response is published for every device.
+        """
         system = integrated_system
         entities = sample_entities
         
@@ -610,7 +664,11 @@ class TestErrorHandlingIntegration:
     
     @pytest.mark.asyncio
     async def test_mqtt_publish_failure_handling(self, integrated_system, sample_entities):
-        """Test handling of MQTT publish failures."""
+        """
+        Tests that the system handles MQTT publish failures gracefully during access request processing.
+        
+        Simulates an MQTT broker outage by forcing the publish method to raise an exception. Verifies that access validation logic still executes and that the system does not crash or raise exceptions when publishing fails.
+        """
         system = integrated_system
         entities = sample_entities
         
@@ -642,7 +700,9 @@ class TestErrorHandlingIntegration:
     
     @pytest.mark.asyncio
     async def test_database_failure_handling(self, integrated_system):
-        """Test handling of database failures."""
+        """
+        Tests that the system handles database failures gracefully by sending an access denial response when repository calls fail, without raising exceptions.
+        """
         system = integrated_system
         
         # Make database calls fail
@@ -673,7 +733,9 @@ class TestErrorHandlingIntegration:
     
     @pytest.mark.asyncio
     async def test_malformed_message_handling(self, integrated_system):
-        """Test handling of malformed MQTT messages."""
+        """
+        Tests that the system gracefully handles various malformed MQTT messages without raising exceptions or attempting access validation.
+        """
         system = integrated_system
         
         malformed_payloads = [
@@ -699,7 +761,11 @@ class TestPerformanceIntegration:
     
     @pytest.mark.asyncio
     async def test_high_throughput_message_processing(self, integrated_system, sample_entities):
-        """Test system performance under high message throughput."""
+        """
+        Evaluates system performance by processing 100 concurrent access requests.
+        
+        Simulates high-throughput conditions by sending multiple access request messages in parallel, using mocked repository responses for speed. Asserts that all messages are processed within a 10-second threshold and verifies that each request triggers the expected repository calls. Prints throughput statistics upon completion.
+        """
         system = integrated_system
         entities = sample_entities
         

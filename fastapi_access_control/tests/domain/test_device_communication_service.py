@@ -22,7 +22,9 @@ from app.domain.entities.device_message import (
 
 @pytest.fixture
 def mock_mqtt_adapter():
-    """Mock MQTT adapter for testing."""
+    """
+    Provides a mocked asynchronous MQTT adapter with a stubbed publish method for testing.
+    """
     adapter = AsyncMock()
     adapter.publish = AsyncMock(return_value=None)
     return adapter
@@ -30,7 +32,9 @@ def mock_mqtt_adapter():
 
 @pytest.fixture
 def device_service(mock_mqtt_adapter):
-    """Device communication service with mocked MQTT adapter."""
+    """
+    Provides a DeviceCommunicationService instance using a mocked MQTT adapter for testing.
+    """
     return DeviceCommunicationService(mock_mqtt_adapter)
 
 
@@ -39,7 +43,11 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_publish_access_response_granted(self, device_service, mock_mqtt_adapter):
-        """Test publishing granted access response."""
+        """
+        Tests that a granted access response is published correctly for a device.
+        
+        Verifies that the MQTT publish method is called with the expected topic, QoS, and payload fields when an access granted response is sent, including user and access details.
+        """
         device_id = "door_lock_001"
         response = DeviceAccessResponse.create_granted(
             reason="Access granted for John Doe",
@@ -75,7 +83,9 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_publish_access_response_denied(self, device_service, mock_mqtt_adapter):
-        """Test publishing denied access response."""
+        """
+        Tests that publishing a denied access response sends the correct MQTT message with expected payload fields indicating access denial, reason, and PIN requirement.
+        """
         device_id = "door_lock_002"
         response = DeviceAccessResponse.create_denied(
             reason="Card not found",
@@ -98,7 +108,9 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_publish_access_response_mqtt_error(self, device_service, mock_mqtt_adapter):
-        """Test handling MQTT publish error for access response."""
+        """
+        Tests that the access response publish method returns False when an MQTT publish error occurs.
+        """
         mock_mqtt_adapter.publish.side_effect = Exception("MQTT connection failed")
         
         device_id = "door_lock_001"
@@ -110,7 +122,9 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_send_door_command_unlock(self, device_service, mock_mqtt_adapter):
-        """Test sending unlock command to door."""
+        """
+        Tests that sending an unlock door command publishes the correct MQTT message with expected topic, QoS, and payload fields including command type, parameters, timeout, acknowledgment requirement, message ID, and timestamp.
+        """
         command = DoorCommand.create_unlock("door_lock_001", duration=10)
         
         result = await device_service.send_door_command(command)
@@ -136,7 +150,11 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_send_door_command_with_acknowledgment_tracking(self, device_service, mock_mqtt_adapter):
-        """Test sending command with acknowledgment tracking."""
+        """
+        Tests that sending a door command with acknowledgment enabled tracks the command in pending commands.
+        
+        Verifies that the command is added to the service's pending commands dictionary after being sent.
+        """
         command = DoorCommand.create_lock("door_lock_001")
         
         result = await device_service.send_door_command(command)
@@ -150,7 +168,11 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_send_door_command_without_acknowledgment(self, device_service, mock_mqtt_adapter):
-        """Test sending command without acknowledgment requirement."""
+        """
+        Tests that sending a door command without acknowledgment does not track the command in pending commands.
+        
+        Verifies that the command is published successfully and is not added to the pending commands dictionary when acknowledgment is not required.
+        """
         command = DoorCommand(
             command=DeviceCommandType.STATUS,
             device_id="door_lock_001",
@@ -188,7 +210,11 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_send_lock_command_shortcut(self, device_service, mock_mqtt_adapter):
-        """Test lock command shortcut method."""
+        """
+        Tests that the lock command shortcut method sends a lock command to the specified device.
+        
+        Verifies that the MQTT publish method is called with the correct payload containing the "lock" command and empty parameters, and that the method returns True.
+        """
         device_id = "door_lock_002"
         
         result = await device_service.send_lock_command(device_id)
@@ -205,7 +231,11 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_request_device_status(self, device_service, mock_mqtt_adapter):
-        """Test requesting device status."""
+        """
+        Tests that requesting a device's status sends the correct MQTT command and requires acknowledgment.
+        
+        Verifies that the service publishes a status command with the appropriate payload and acknowledgment flag.
+        """
         device_id = "door_lock_003"
         
         result = await device_service.request_device_status(device_id)
@@ -222,7 +252,11 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_broadcast_notification(self, device_service, mock_mqtt_adapter):
-        """Test broadcasting notification to all devices."""
+        """
+        Tests that broadcasting a notification sends the correct MQTT message to all devices.
+        
+        Verifies that the notification is published with the expected topic, QoS, and payload fields including message, severity, timestamp, and message ID.
+        """
         message = "System maintenance in 10 minutes"
         severity = "warning"
         
@@ -247,7 +281,9 @@ class TestDeviceCommunicationService:
     
     @pytest.mark.asyncio
     async def test_emergency_lockdown(self, device_service, mock_mqtt_adapter):
-        """Test emergency lockdown command."""
+        """
+        Tests that the emergency lockdown command is published with the correct topic, QoS, and payload fields, and verifies the command returns True on success.
+        """
         reason = "Security breach detected"
         
         result = await device_service.handle_emergency_lockdown(reason)
@@ -277,7 +313,11 @@ class TestDeviceMessageParsing:
 
     @pytest.mark.asyncio
     async def test_parse_device_request_valid(self, device_service):
-        """Test parsing valid device access request."""
+        """
+        Tests that a valid device access request is correctly parsed from a topic and JSON payload.
+        
+        Verifies that the parsed request contains the expected card ID, door ID, device ID, PIN, and location data.
+        """
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123",
@@ -298,7 +338,11 @@ class TestDeviceMessageParsing:
         assert request.location_data["floor"] == 2
     
     def test_parse_device_request_missing_required_field(self, device_service):
-        """Test parsing device request with missing required field."""
+        """
+        Tests that parsing a device request with a missing required field returns None.
+        
+        Verifies that when the payload lacks a required field (e.g., door_id), the parse_device_request method returns None, indicating invalid input.
+        """
         topic = "access/requests/door_lock_001"
         payload = json.dumps({
             "card_id": "ABC123"
@@ -310,7 +354,9 @@ class TestDeviceMessageParsing:
         assert request is None
     
     def test_parse_device_request_invalid_topic(self, device_service):
-        """Test parsing device request with invalid topic format."""
+        """
+        Tests that parsing a device request with an invalid topic format returns None.
+        """
         topic = "invalid/topic"
         payload = json.dumps({"card_id": "ABC123", "door_id": str(self.TEST_DOOR_ID)})
         
@@ -319,7 +365,9 @@ class TestDeviceMessageParsing:
         assert request is None
     
     def test_parse_device_request_invalid_json(self, device_service):
-        """Test parsing device request with invalid JSON."""
+        """
+        Tests that parsing a device request with invalid JSON payload returns None.
+        """
         topic = "access/requests/door_lock_001"
         payload = "invalid json"
         
@@ -328,7 +376,11 @@ class TestDeviceMessageParsing:
         assert request is None
     
     def test_parse_command_acknowledgment_valid(self, device_service):
-        """Test parsing valid command acknowledgment."""
+        """
+        Tests that a valid command acknowledgment message is correctly parsed and the corresponding pending command is removed.
+        
+        Adds a pending command with a matching message ID, parses an acknowledgment payload, and verifies that the acknowledgment fields are extracted and the command is no longer tracked.
+        """
         topic = "access/commands/door_lock_001/ack"
         message_id = str(uuid4())
         payload = json.dumps({
@@ -357,7 +409,9 @@ class TestDeviceMessageParsing:
         assert message_id not in device_service._pending_commands
     
     def test_parse_command_acknowledgment_invalid_topic(self, device_service):
-        """Test parsing acknowledgment with invalid topic."""
+        """
+        Tests that parsing a command acknowledgment with an invalid topic returns None.
+        """
         topic = "invalid/topic"
         payload = json.dumps({"message_id": str(uuid4()), "status": "success"})
         
@@ -366,7 +420,11 @@ class TestDeviceMessageParsing:
         assert ack is None
     
     def test_parse_device_status_valid(self, device_service):
-        """Test parsing valid device status."""
+        """
+        Tests that a valid device status message is correctly parsed from the MQTT topic and payload.
+        
+        Verifies that the parsed status object contains the expected device ID, online status, door state, battery level, signal strength, and firmware version.
+        """
         topic = "access/devices/door_lock_001/status"
         payload = json.dumps({
             "online": True,
@@ -388,7 +446,11 @@ class TestDeviceMessageParsing:
         assert status.firmware_version == "1.2.3"
     
     def test_parse_device_event_with_type_in_topic(self, device_service):
-        """Test parsing device event with type in topic."""
+        """
+        Tests that a device event message with the event type in the topic is correctly parsed.
+        
+        Verifies that the parsed event contains the expected device ID, event type, details, and severity.
+        """
         topic = "access/events/door_forced/door_lock_001"
         payload = json.dumps({
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -406,7 +468,11 @@ class TestDeviceMessageParsing:
         assert event.severity == "critical"
     
     def test_parse_device_event_without_type_in_topic(self, device_service):
-        """Test parsing device event without type in topic."""
+        """
+        Tests parsing of a device event message where the event type is provided in the payload instead of the topic.
+        
+        Verifies that the parsed event contains the correct device ID, event type, details, and severity.
+        """
         topic = "access/events/door_lock_001"
         payload = json.dumps({
             "event_type": "door_opened",
@@ -428,7 +494,9 @@ class TestCommandManagement:
     """Tests for command management functionality."""
     
     def test_get_pending_commands_empty(self, device_service):
-        """Test getting pending commands when none exist."""
+        """
+        Verifies that retrieving pending commands returns an empty dictionary when no commands are pending.
+        """
         pending = device_service.get_pending_commands()
         
         assert pending == {}
@@ -450,7 +518,9 @@ class TestCommandManagement:
         assert pending[command2.message_id] == command2
     
     def test_cleanup_expired_commands(self, device_service):
-        """Test cleanup of expired commands."""
+        """
+        Tests that expired commands are removed from the pending commands dictionary while recent commands are retained after cleanup.
+        """
         # Create commands with different timestamps
         recent_command = DoorCommand.create_unlock("door_lock_001")
         old_command = DoorCommand.create_lock("door_lock_002")

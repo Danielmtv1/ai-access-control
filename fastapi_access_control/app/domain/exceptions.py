@@ -23,6 +23,14 @@ class EntityNotFoundError(DomainError):
     """Base exception for when an entity is not found."""
     
     def __init__(self, entity_type: str, identifier: str, message: str = None):
+        """
+        Initializes an EntityNotFoundError with entity type and identifier details.
+        
+        Args:
+            entity_type: The type of entity that was not found.
+            identifier: The unique identifier of the missing entity.
+            message: Optional custom error message. If not provided, a default message is generated.
+        """
         self.entity_type = entity_type
         self.identifier = identifier
         if message is None:
@@ -34,6 +42,13 @@ class CardNotFoundError(EntityNotFoundError):
     """Exception raised when a card is not found."""
     
     def __init__(self, card_id: str, message: str = None):
+        """
+        Initializes a CardNotFoundError for a missing card entity.
+        
+        Args:
+            card_id: The identifier of the card that was not found.
+            message: Optional custom error message.
+        """
         super().__init__("Card", card_id, message)
 
 
@@ -41,6 +56,13 @@ class DoorNotFoundError(EntityNotFoundError):
     """Exception raised when a door is not found."""
     
     def __init__(self, door_id: str, message: str = None):
+        """
+        Initializes a DoorNotFoundError for a missing door entity.
+        
+        Args:
+            door_id: The unique identifier of the door.
+            message: Optional custom error message.
+        """
         super().__init__("Door", door_id, message)
 
 
@@ -48,6 +70,13 @@ class UserNotFoundError(EntityNotFoundError):
     """Exception raised when a user is not found."""
     
     def __init__(self, user_id: str, message: str = None):
+        """
+        Initializes a UserNotFoundError for a missing user entity.
+        
+        Args:
+            user_id: The identifier of the user that was not found.
+            message: Optional custom error message.
+        """
         super().__init__("User", user_id, message)
 
 
@@ -55,6 +84,13 @@ class PermissionNotFoundError(EntityNotFoundError):
     """Exception raised when a permission is not found."""
     
     def __init__(self, permission_id: str, message: str = None):
+        """
+        Initializes a PermissionNotFoundError for a missing permission entity.
+        
+        Args:
+            permission_id: The identifier of the missing permission.
+            message: Optional custom error message.
+        """
         super().__init__("Permission", permission_id, message)
 
 
@@ -83,6 +119,14 @@ class EntityAlreadyExistsError(DomainError):
     """Exception raised when trying to create an entity that already exists."""
     
     def __init__(self, entity_type: str, identifier: str, message: str = None):
+        """
+        Initializes an EntityAlreadyExistsError with entity type and identifier.
+        
+        Args:
+            entity_type: The type of entity that already exists.
+            identifier: The unique identifier of the entity.
+            message: Optional custom error message. If not provided, a default message is generated.
+        """
         self.entity_type = entity_type
         self.identifier = identifier
         if message is None:

@@ -57,6 +57,11 @@ class ApplicationState:
     """Application state container for dependency injection"""
     
     def __init__(self):
+        """
+        Initializes the ApplicationState with placeholders for core services and configuration.
+        
+        Sets up attributes for MQTT messaging, device communication, background tasks, and application settings. Actual service instances are assigned during asynchronous initialization.
+        """
         self.mqtt_message_service: MqttMessageService = None
         self.mqtt_adapter: AiomqttAdapter = None
         self.device_communication_service: DeviceCommunicationService = None
@@ -65,7 +70,11 @@ class ApplicationState:
         self.settings = get_settings()
         
     async def initialize(self):
-        """Initialize all application dependencies"""
+        """
+        Initializes all application dependencies required for the application to run.
+        
+        This method sets up database services, MQTT services, and access validation services in sequence.
+        """
         logger.info("Initializing application dependencies...")
         
         # Initialize core services in order
@@ -76,7 +85,11 @@ class ApplicationState:
         logger.info("Application dependencies initialized successfully")
     
     async def _initialize_database_services(self):
-        """Initialize database session factory and repositories"""
+        """
+        Initializes the database session factory and MQTT message service from the repository container.
+        
+        This method retrieves a centralized repository container, sets up the database session factory, and obtains the MQTT message service for use throughout the application.
+        """
         from app.api.dependencies.repository_dependencies import get_repository_container
         
         # Get centralized repository container
@@ -85,7 +98,11 @@ class ApplicationState:
         self.mqtt_message_service = self.repository_container.get_mqtt_message_service()
     
     async def _initialize_mqtt_services(self):
-        """Initialize MQTT services using centralized factory pattern"""
+        """
+        Initializes MQTT-related services and handlers using a centralized factory.
+        
+        This method sets up the MQTT adapter, device communication service, and device handler by invoking the factory with the current MQTT message service. It also logs the MQTT configuration before initialization.
+        """
         logger.info("Initializing MQTT services using factory pattern")
         
         # Log MQTT configuration
@@ -103,7 +120,11 @@ class ApplicationState:
         )
     
     async def _initialize_access_validation_services(self):
-        """Initialize access validation use case and update device handler"""
+        """
+        Initializes the access validation use case and injects it into the MQTT device handler.
+        
+        This method retrieves repository instances, creates the access validation use case with required dependencies, and updates the MQTT device handler with the device communication service and access validation use case.
+        """
         from app.application.use_cases.access_use_cases import ValidateAccessUseCase
         
         # Get repository instances from container
@@ -127,7 +148,9 @@ class ApplicationState:
         self.mqtt_device_handler.access_use_case = access_validation_use_case
     
     def _log_mqtt_configuration(self):
-        """Log MQTT configuration details"""
+        """
+        Logs the current MQTT configuration parameters, including host, port, TLS usage, and credential status.
+        """
         logger.info("MQTT Configuration:", extra={
             "host": self.settings.MQTT_HOST,
             "port": self.settings.MQTT_PORT,
@@ -137,7 +160,9 @@ class ApplicationState:
         })
     
     async def start_background_tasks(self):
-        """Start all background tasks"""
+        """
+        Starts background tasks required for the application, including the MQTT connection task and Prometheus metrics update.
+        """
         logger.info("Starting background tasks...")
         
         # Start MQTT connection task
@@ -156,7 +181,11 @@ class ApplicationState:
         logger.info("Background tasks started successfully")
     
     async def _mqtt_connection_wrapper(self):
-        """Wrapper for MQTT connection with status tracking"""
+        """
+        Manages the MQTT connection lifecycle, tracks connection status, and subscribes to relevant topics.
+        
+        Establishes the MQTT connection, updates the connection status metric, and subscribes to test and device communication topics. Handles cancellation and errors by updating the connection status accordingly.
+        """
         try:
             logger.info("Starting MQTT connection...")
             await self.mqtt_adapter.connect_and_listen()
@@ -216,7 +245,11 @@ app_state = ApplicationState()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager with proper error handling"""
+    """
+    Manages application startup and shutdown events, initializing and cleaning up core services.
+    
+    On startup, initializes application dependencies, starts background tasks, and stores key services in the FastAPI app state. On shutdown, gracefully terminates background tasks and releases resources. Exceptions during startup are logged and re-raised.
+    """
     
     try:
         # Startup
@@ -245,12 +278,26 @@ async def lifespan(app: FastAPI):
 class UUIDEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles UUID objects"""
     def default(self, obj):
+        """
+        Converts UUID objects to strings for JSON serialization.
+        
+        Args:
+            obj: The object to serialize.
+        
+        Returns:
+            The string representation of a UUID, or the default JSON encoding for other types.
+        """
         if isinstance(obj, uuid.UUID):
             return str(obj)
         return super().default(obj)
 
 def create_application() -> FastAPI:
-    """Factory function to create FastAPI application"""
+    """
+    Creates and configures the FastAPI application instance for the access control system.
+    
+    Initializes the app with custom metadata, UUID JSON serialization, security middleware, exception handlers, API routers, Prometheus metrics, and custom documentation endpoints for Swagger UI and ReDoc.
+    Returns the fully configured FastAPI application.
+    """
     
     settings = get_settings()
     
@@ -313,10 +360,17 @@ def create_application() -> FastAPI:
     return app
 
 def setup_exception_handlers(app: FastAPI):
-    """Setup global exception handlers with proper logging"""
+    """
+    Registers global exception handlers for repository, MQTT, domain, and generic errors.
+    
+    These handlers log exceptions, increment Prometheus metrics, and return standardized JSON error responses for database, messaging, domain, and unexpected errors.
+    """
     
     @app.exception_handler(RepositoryError)
     async def repository_exception_handler(request: Request, exc: RepositoryError):
+        """
+        Handles RepositoryError exceptions by logging the error, incrementing the API request metric, and returning a standardized 500 JSON response indicating a database error.
+        """
         logger.error(
             f"Repository error occurred at {request.method} {request.url.path}: {str(exc)}",
             exc_info=True
@@ -340,6 +394,9 @@ def setup_exception_handlers(app: FastAPI):
     
     @app.exception_handler(MqttAdapterError)
     async def mqtt_adapter_exception_handler(request: Request, exc: MqttAdapterError):
+        """
+        Handles MqttAdapterError exceptions by logging the error, updating metrics, and returning a standardized 500 JSON response indicating a messaging system error.
+        """
         logger.error(
             f"MQTT adapter error occurred at {request.method} {request.url.path}: {str(exc)}",
             exc_info=True
@@ -363,6 +420,9 @@ def setup_exception_handlers(app: FastAPI):
     
     @app.exception_handler(DomainError)
     async def domain_exception_handler(request: Request, exc: DomainError):
+        """
+        Handles DomainError exceptions by logging the error, incrementing the API request metric, and returning a 400 Bad Request JSON response with error details.
+        """
         logger.warning(
             f"Domain error occurred at {request.method} {request.url.path}: {str(exc)}"
         )
@@ -385,6 +445,12 @@ def setup_exception_handlers(app: FastAPI):
     
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
+        """
+        Handles uncaught exceptions by logging the error, incrementing metrics, and returning a generic 500 error response.
+        
+        Returns:
+            JSONResponse: A response with status code 500 and a standardized error message.
+        """
         logger.error(
             f"Unexpected error occurred at {request.method} {request.url.path}: {str(exc)}",
             exc_info=True
@@ -407,7 +473,11 @@ def setup_exception_handlers(app: FastAPI):
         )
 
 def setup_routers(app: FastAPI):
-    """Setup API routers"""
+    """
+    Registers API routers and the root endpoint with the FastAPI application.
+    
+    Includes health check and versioned API routers for various domains, and defines the root endpoint returning API metadata and documentation URLs.
+    """
     
     # Health check endpoints (no prefix)
     app.include_router(health_router, tags=["Health"])

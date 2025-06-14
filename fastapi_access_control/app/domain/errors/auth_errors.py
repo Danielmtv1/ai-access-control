@@ -31,6 +31,12 @@ class InvalidTokenError(AuthError):
 class UserInactiveError(AuthError):
     """Error when user account is inactive"""
     def __init__(self, user_id: UUID):
+        """
+        Initializes a UserInactiveError for an inactive user account.
+        
+        Args:
+            user_id: The UUID of the inactive user.
+        """
         super().__init__(
             message=f"User {user_id} is inactive",
             code="USER_INACTIVE",

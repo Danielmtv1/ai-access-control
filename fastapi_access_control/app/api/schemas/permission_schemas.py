@@ -53,6 +53,12 @@ class CreatePermissionRequest(BaseModel):
 
     @validator('valid_until')
     def validate_valid_until(cls, v, values):
+        """
+        Validates that the 'valid_until' value is later than 'valid_from'.
+        
+        Raises:
+            ValueError: If 'valid_until' is not after 'valid_from'.
+        """
         if v and 'valid_from' in values and v <= values['valid_from']:
             raise ValueError('valid_until must be after valid_from')
         return v
@@ -87,6 +93,11 @@ class UpdatePermissionRequest(BaseModel):
 
     @validator('valid_until')
     def validate_valid_until(cls, v, values):
+        """
+        Validates that the 'valid_until' datetime is later than 'valid_from'.
+        
+        Raises a ValueError if 'valid_until' is provided and is not after 'valid_from'.
+        """
         if v and 'valid_from' in values and values['valid_from'] and v <= values['valid_from']:
             raise ValueError('valid_until must be after valid_from')
         return v

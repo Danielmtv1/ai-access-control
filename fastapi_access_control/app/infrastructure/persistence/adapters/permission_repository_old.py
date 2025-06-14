@@ -22,11 +22,28 @@ class PermissionRepository(PermissionRepositoryPort):
     """SQLAlchemy implementation of Permission repository."""
     
     def __init__(self, session_factory: Callable[[], AsyncSession]):
+        """
+        Initializes the PermissionRepository with a session factory and a permission mapper.
+        
+        Args:
+            session_factory: A callable that returns a new asynchronous SQLAlchemy session.
+        """
         self.session_factory = session_factory
         self.mapper = PermissionMapper()
     
     async def create(self, permission: Permission) -> Permission:
-        """Create a new permission."""
+        """
+        Creates a new permission record in the database.
+        
+        Args:
+            permission: The permission domain entity to be created.
+        
+        Returns:
+            The created permission entity with database-generated fields populated.
+        
+        Raises:
+            RepositoryError: If a database error occurs during creation.
+        """
         async with self.session_factory() as session:
             try:
                 model = self.mapper.to_model(permission)
@@ -46,7 +63,18 @@ class PermissionRepository(PermissionRepositoryPort):
                 raise RepositoryError(f"Failed to create permission: {e}") from e
     
     async def get_by_id(self, permission_id: UUID) -> Optional[Permission]:
-        """Get permission by ID."""
+        """
+        Retrieves a permission by its unique identifier.
+        
+        Args:
+            permission_id: The UUID of the permission to retrieve.
+        
+        Returns:
+            The corresponding Permission domain object if found, otherwise None.
+        
+        Raises:
+            RepositoryError: If a database error occurs during retrieval.
+        """
         try:
             query = select(PermissionModel).where(PermissionModel.id == permission_id)
             result = await self.session.execute(query)
@@ -59,7 +87,16 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get permission: {str(e)}")
     
     async def get_by_user_and_door_list(self, user_id: UUID, door_id: UUID) -> List[Permission]:
-        """Get permissions for user and door."""
+        """
+        Retrieves all permissions associated with a specific user and door.
+        
+        Args:
+            user_id: The unique identifier of the user.
+            door_id: The unique identifier of the door.
+        
+        Returns:
+            A list of Permission domain objects matching the given user and door.
+        """
         try:
             query = select(PermissionModel).where(
                 and_(
@@ -77,7 +114,19 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get permissions: {str(e)}")
     
     async def get_by_user_and_door(self, user_id: UUID, door_id: UUID) -> Optional[Permission]:
-        """Get permission for specific user and door combination."""
+        """
+        Retrieves the permission for a specific user and door combination.
+        
+        Args:
+            user_id: The unique identifier of the user.
+            door_id: The unique identifier of the door.
+        
+        Returns:
+            The corresponding Permission object if found, otherwise None.
+        
+        Raises:
+            RepositoryError: If a database error occurs during retrieval.
+        """
         try:
             query = select(PermissionModel).where(
                 and_(
@@ -103,7 +152,15 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get permission: {str(e)}")
     
     async def get_by_user_id(self, user_id: UUID) -> List[Permission]:
-        """Get all permissions for a user."""
+        """
+        Retrieves all permissions associated with a specific user.
+        
+        Args:
+            user_id: The unique identifier of the user.
+        
+        Returns:
+            A list of Permission domain objects for the given user.
+        """
         try:
             query = select(PermissionModel).where(PermissionModel.user_id == user_id)
             result = await self.session.execute(query)
@@ -116,7 +173,15 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get permissions: {str(e)}")
     
     async def get_by_door_id(self, door_id: UUID) -> List[Permission]:
-        """Get all permissions for a door."""
+        """
+        Retrieves all permissions associated with a specific door.
+        
+        Args:
+            door_id: The unique identifier of the door.
+        
+        Returns:
+            A list of Permission domain objects linked to the specified door.
+        """
         try:
             query = select(PermissionModel).where(PermissionModel.door_id == door_id)
             result = await self.session.execute(query)
@@ -129,7 +194,15 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get permissions: {str(e)}")
     
     async def get_by_card_id(self, card_id: UUID) -> List[Permission]:
-        """Get all permissions for a card."""
+        """
+        Retrieves all permissions associated with a specific card ID.
+        
+        Args:
+        	card_id: The unique identifier of the card.
+        
+        Returns:
+        	A list of Permission domain objects linked to the given card.
+        """
         try:
             # This requires joining with cards table to get user_id
             # For now, we'll need to implement this based on the card-user relationship
@@ -145,7 +218,18 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get permissions: {str(e)}")
     
     async def update(self, permission: Permission) -> Permission:
-        """Update existing permission."""
+        """
+        Updates an existing permission record in the database.
+        
+        Args:
+        	permission: The domain Permission entity containing updated data.
+        
+        Returns:
+        	The updated Permission entity.
+        
+        Raises:
+        	RepositoryError: If the permission does not exist or the update fails.
+        """
         try:
             query = select(PermissionModel).where(PermissionModel.id == permission.id)
             result = await self.session.execute(query)
@@ -169,7 +253,18 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to update permission: {str(e)}")
     
     async def delete(self, permission_id: UUID) -> bool:
-        """Delete permission by ID."""
+        """
+        Deletes a permission by its unique identifier.
+        
+        Args:
+            permission_id: The UUID of the permission to delete.
+        
+        Returns:
+            True if the permission was found and deleted, False if not found.
+        
+        Raises:
+            RepositoryError: If an error occurs during the deletion process.
+        """
         try:
             query = select(PermissionModel).where(PermissionModel.id == permission_id)
             result = await self.session.execute(query)
@@ -190,7 +285,16 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to delete permission: {str(e)}")
     
     async def list_permissions(self, skip: int = 0, limit: int = 100) -> List[Permission]:
-        """List permissions with pagination."""
+        """
+        Retrieves a paginated list of permissions.
+        
+        Args:
+            skip: Number of records to skip before starting to collect the result set.
+            limit: Maximum number of permissions to return.
+        
+        Returns:
+            A list of Permission domain entities within the specified range.
+        """
         try:
             query = select(PermissionModel).offset(skip).limit(limit)
             result = await self.session.execute(query)
@@ -203,7 +307,12 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to list permissions: {str(e)}")
     
     async def get_active_permissions(self) -> List[Permission]:
-        """Get all active permissions."""
+        """
+        Retrieves all permissions that are currently active.
+        
+        Returns:
+            A list of Permission domain objects representing active permissions.
+        """
         try:
             query = select(PermissionModel).where(PermissionModel.is_active == True)
             result = await self.session.execute(query)
@@ -216,7 +325,21 @@ class PermissionRepository(PermissionRepositoryPort):
             raise RepositoryError(f"Failed to get active permissions: {str(e)}")
     
     async def check_access(self, user_id: UUID, door_id: UUID, current_time: time, current_day: str) -> bool:
-        """Check if user has access to door at the given time and day."""
+        """
+        Determines whether a user has access to a specific door at a given time and day.
+        
+        Args:
+            user_id: The unique identifier of the user.
+            door_id: The unique identifier of the door.
+            current_time: The current time to check access against.
+            current_day: The current day of the week as a string.
+        
+        Returns:
+            True if the user has access to the door at the specified time and day, otherwise False.
+        
+        Raises:
+            RepositoryError: If an error occurs during the access check process.
+        """
         try:
             # Get permission for user and door combination
             permission = await self.get_by_user_and_door(user_id, door_id)

@@ -7,12 +7,28 @@ class DoorRepositoryPort(ABC):
     
     @abstractmethod
     async def create(self, door: Door) -> Door:
-        """Create a new door"""
+        """
+        Creates a new door entity asynchronously.
+        
+        Args:
+        	door: The Door object to be created.
+        
+        Returns:
+        	The created Door instance.
+        """
         pass
     
     @abstractmethod
     async def get_by_id(self, door_id: UUID) -> Optional[Door]:
-        """Get door by ID"""
+        """
+        Retrieves a door entity by its unique identifier.
+        
+        Args:
+            door_id: The UUID of the door to retrieve.
+        
+        Returns:
+            The Door object if found, or None if no door with the given ID exists.
+        """
         pass
     
     @abstractmethod
@@ -27,12 +43,28 @@ class DoorRepositoryPort(ABC):
     
     @abstractmethod
     async def update(self, door: Door) -> Door:
-        """Update existing door"""
+        """
+        Updates an existing door entity and returns the updated door.
+        
+        Args:
+            door: The door entity with updated information.
+        
+        Returns:
+            The updated door entity.
+        """
         pass
     
     @abstractmethod
     async def delete(self, door_id: UUID) -> bool:
-        """Delete door by ID"""
+        """
+        Deletes a door entity by its unique identifier.
+        
+        Args:
+            door_id: The UUID of the door to delete.
+        
+        Returns:
+            True if the door was successfully deleted, False otherwise.
+        """
         pass
     
     @abstractmethod

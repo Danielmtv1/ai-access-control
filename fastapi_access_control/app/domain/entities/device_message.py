@@ -38,7 +38,18 @@ class DeviceAccessRequest:
     
     @classmethod
     def create(cls, card_id: str, door_id: UUID, device_id: str, pin: Optional[str] = None) -> 'DeviceAccessRequest':
-        """Factory method to create a new device access request."""
+        """
+        Creates a new DeviceAccessRequest with the current UTC timestamp and a unique message ID.
+        
+        Args:
+        	card_id: The identifier of the access card presented.
+        	door_id: The UUID of the door being accessed.
+        	device_id: The identifier of the requesting device.
+        	pin: Optional PIN code provided for access.
+        
+        Returns:
+        	A DeviceAccessRequest instance populated with the provided information, current timestamp, and a generated message ID.
+        """
         return cls(
             card_id=card_id,
             door_id=door_id,
@@ -65,7 +76,18 @@ class DeviceAccessResponse:
     @classmethod
     def create_granted(cls, reason: str, duration: int = 5, user_name: Optional[str] = None, 
                       card_type: Optional[str] = None) -> 'DeviceAccessResponse':
-        """Create a granted access response."""
+        """
+                      Creates a DeviceAccessResponse indicating access has been granted and the door will be unlocked.
+                      
+                      Args:
+                          reason: Explanation for granting access.
+                          duration: Number of seconds the door remains unlocked (default is 5).
+                          user_name: Optional name of the user granted access.
+                          card_type: Optional type of card used for access.
+                      
+                      Returns:
+                          A DeviceAccessResponse instance representing a granted access event with unlock action.
+                      """
         return cls(
             access_granted=True,
             door_action=DoorAction.UNLOCK,
@@ -79,7 +101,18 @@ class DeviceAccessResponse:
     
     @classmethod
     def create_denied(cls, reason: str, requires_pin: bool = False) -> 'DeviceAccessResponse':
-        """Create a denied access response."""
+        """
+        Creates a denied access response for a device access request.
+        
+        If a PIN is required, sets the door action to require PIN entry; otherwise, sets it to deny access.
+        
+        Args:
+            reason: The reason for denying access.
+            requires_pin: Whether the response should require PIN entry.
+        
+        Returns:
+            A DeviceAccessResponse indicating access denial.
+        """
         return cls(
             access_granted=False,
             door_action=DoorAction.REQUIRE_PIN if requires_pin else DoorAction.DENY,
@@ -103,7 +136,18 @@ class DoorCommand:
     
     @classmethod
     def create_unlock(cls, device_id: str, duration: int = None) -> 'DoorCommand':
-        """Create an unlock command."""
+        """
+        Creates a DoorCommand to unlock a device for a specified duration.
+        
+        If no duration is provided, the default unlock duration from configuration is used.
+        
+        Args:
+            device_id: The unique identifier of the device to unlock.
+            duration: Optional; the number of seconds the door should remain unlocked.
+        
+        Returns:
+            A DoorCommand instance representing the unlock command.
+        """
         if duration is None:
             from app.config import get_settings
             duration = get_settings().DEFAULT_UNLOCK_DURATION
@@ -117,7 +161,15 @@ class DoorCommand:
     
     @classmethod
     def create_lock(cls, device_id: str) -> 'DoorCommand':
-        """Create a lock command."""
+        """
+        Creates a DoorCommand instance to lock the specified device.
+        
+        Args:
+            device_id: The unique identifier of the device to be locked.
+        
+        Returns:
+            A DoorCommand configured to issue a lock command to the device.
+        """
         return cls(
             command=DeviceCommandType.LOCK,
             device_id=device_id,
@@ -128,7 +180,15 @@ class DoorCommand:
     
     @classmethod
     def create_status_request(cls, device_id: str) -> 'DoorCommand':
-        """Create a status request command."""
+        """
+        Creates a DoorCommand to request the current status from a specified device.
+        
+        Args:
+            device_id: The unique identifier of the target device.
+        
+        Returns:
+            A DoorCommand instance configured as a status request requiring acknowledgment.
+        """
         return cls(
             command=DeviceCommandType.STATUS,
             device_id=device_id,
@@ -152,7 +212,12 @@ class DeviceStatus:
     firmware_version: Optional[str] = None
     
     def is_healthy(self) -> bool:
-        """Check if device is in healthy state."""
+        """
+        Determines whether the device is in a healthy operational state.
+        
+        Returns:
+            True if the device is online, has no error message, and battery level (if reported) is at least 20%; otherwise, False.
+        """
         if not self.online:
             return False
         
@@ -177,7 +242,11 @@ class DeviceEvent:
     
     @classmethod
     def create_door_opened(cls, device_id: str, card_id: Optional[str] = None) -> 'DeviceEvent':
-        """Create door opened event."""
+        """
+        Creates a DeviceEvent representing a door opened event.
+        
+        If a card ID is provided, it is included in the event details.
+        """
         return cls(
             device_id=device_id,
             event_type="door_opened",
@@ -188,7 +257,11 @@ class DeviceEvent:
     
     @classmethod
     def create_door_forced(cls, device_id: str) -> 'DeviceEvent':
-        """Create door forced open event."""
+        """
+        Creates a DeviceEvent representing a forced door open incident.
+        
+        The event is assigned a severity of "critical" and an event type of "door_forced".
+        """
         return cls(
             device_id=device_id,
             event_type="door_forced",
@@ -200,7 +273,16 @@ class DeviceEvent:
     
     @classmethod
     def create_tamper_alert(cls, device_id: str, details: Dict[str, Any]) -> 'DeviceEvent':
-        """Create tamper alert event."""
+        """
+        Creates a tamper alert event for a device with critical severity.
+        
+        Args:
+            device_id: The unique identifier of the device reporting the tamper alert.
+            details: Additional information about the tamper event.
+        
+        Returns:
+            A DeviceEvent instance representing a tamper alert.
+        """
         return cls(
             device_id=device_id,
             event_type="tamper_alert",
@@ -223,10 +305,14 @@ class CommandAcknowledgment:
     timestamp: Optional[datetime] = None
     
     def __post_init__(self):
-        """Set timestamp if not provided."""
+        """
+        Initializes the timestamp to the current UTC time if it was not provided during instantiation.
+        """
         if self.timestamp is None:
             self.timestamp = datetime.now(timezone.utc)
     
     def is_successful(self) -> bool:
-        """Check if command was executed successfully."""
+        """
+        Returns True if the command acknowledgment status is "success", otherwise False.
+        """
         return self.status == "success"

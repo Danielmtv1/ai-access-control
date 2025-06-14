@@ -22,7 +22,14 @@ async def create_message(
     mqtt_service: MqttMessageService = Depends(get_mqtt_message_service),
     mqtt_adapter: AiomqttAdapter = Depends(get_mqtt_adapter)
 ) -> MqttMessageResponse:
-    """Create a new MQTT message"""
+    """
+    Creates and publishes a new MQTT message.
+    
+    Accepts message data, saves it to the database, publishes it to the MQTT broker, and returns the saved message details. Raises an HTTP 400 error for invalid input and an HTTP 500 error if publishing fails.
+    
+    Returns:
+        MqttMessageResponse: The details of the created and published MQTT message.
+    """
     try:
         logger.info(f"Creating message with topic='{message_data.topic}', message='{message_data.message}'")
         
@@ -72,7 +79,12 @@ async def create_message(
 async def get_messages(
     mqtt_service: MqttMessageService = Depends(get_mqtt_message_service)  # ← Corregido
 ) -> MqttMessageList:
-    """Get all MQTT messages"""
+    """
+    Retrieves all MQTT messages.
+    
+    Returns:
+        MqttMessageList: A list of all stored MQTT messages with their details and the total count.
+    """
     messages = await mqtt_service.get_all_messages()
     
     return MqttMessageList(
@@ -93,7 +105,15 @@ async def get_message(
     message_id: UUID,  # ← Cambiado de int a UUID
     mqtt_service: MqttMessageService = Depends(get_mqtt_message_service)  # ← Corregido
 ) -> MqttMessageResponse:
-    """Get MQTT message by ID"""
+    """
+    Retrieves an MQTT message by its unique identifier.
+    
+    Raises:
+        HTTPException: If the message with the specified ID is not found, returns a 404 error.
+    
+    Returns:
+        MqttMessageResponse containing the message details.
+    """
     message = await mqtt_service.get_message_by_id(message_id)
     
     if not message:
@@ -114,7 +134,15 @@ async def get_messages_by_topic(
     topic: str,
     mqtt_service: MqttMessageService = Depends(get_mqtt_message_service)  # ← Corregido
 ) -> MqttMessageList:
-    """Get MQTT messages by topic"""
+    """
+    Retrieves all MQTT messages associated with a specific topic.
+    
+    Args:
+        topic: The MQTT topic to filter messages by.
+    
+    Returns:
+        A list of messages matching the given topic and the total count.
+    """
     messages = await mqtt_service.get_messages_by_topic(topic)
     
     return MqttMessageList(

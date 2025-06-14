@@ -14,13 +14,23 @@ class TestPermissionsAPI:
     
     @pytest.fixture
     def client(self):
-        """HTTP client for testing."""
+        """
+        Provides an HTTP client for testing FastAPI endpoints.
+        
+        Returns:
+            TestClient: An instance of TestClient configured with the FastAPI app.
+        """
         from app.main import app
         return TestClient(app)
     
     @pytest.fixture
     def mock_admin_user(self):
-        """Mock admin user for testing."""
+        """
+        Creates and returns a mock admin user entity for testing purposes.
+        
+        Returns:
+            User: A user instance with admin role, active status, and sample data.
+        """
         return User(
             id=SAMPLE_ADMIN_UUID,
             email="admin@test.com",
@@ -34,7 +44,12 @@ class TestPermissionsAPI:
     
     @pytest.fixture
     def mock_regular_user(self):
-        """Mock regular user for testing."""
+        """
+        Creates and returns a mock regular user entity for testing purposes.
+        
+        Returns:
+            User: A user instance with the USER role and active status.
+        """
         return User(
             id=SAMPLE_USER_UUID,
             email="user@test.com",
@@ -48,7 +63,12 @@ class TestPermissionsAPI:
     
     @pytest.fixture
     def mock_permission(self):
-        """Mock permission for testing."""
+        """
+        Creates and returns a mock Permission object with preset test data.
+        
+        Returns:
+            Permission: A Permission instance with sample user, door, and card IDs, active status, and valid date range.
+        """
         return Permission(
             id=uuid4(),
             user_id=SAMPLE_USER_UUID,
@@ -66,16 +86,30 @@ class TestPermissionsAPI:
         )
     
     def setup_auth_override(self, client, user):
-        """Helper to setup authentication override."""
+        """
+        Overrides the authentication dependency to simulate a logged-in user for testing.
+        
+        Args:
+            client: The FastAPI test client instance.
+            user: The user entity to be returned by the authentication dependency.
+        """
         from app.api.dependencies.auth_dependencies import get_current_active_user
         client.app.dependency_overrides[get_current_active_user] = lambda: user
         
     def cleanup_overrides(self, client):
-        """Helper to cleanup dependency overrides."""
+        """
+        Removes all dependency overrides from the FastAPI test client.
+        
+        This helper ensures that any custom dependency overrides set during a test are cleared, restoring the application's dependency injection to its default state.
+        """
         client.app.dependency_overrides.clear()
 
     def test_create_permission_success(self, client, mock_admin_user, mock_permission):
-        """Test successful permission creation"""
+        """
+        Tests that an admin user can successfully create a permission via the API.
+        
+        Simulates authentication as an admin, mocks the permission creation use case to return a mock permission, sends a POST request with valid permission data, and asserts that the response status is 201 and the returned data matches the input.
+        """
         with patch('app.api.v1.permissions.CreatePermissionUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -115,7 +149,9 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_create_permission_unauthorized(self, client):
-        """Test permission creation without authentication"""
+        """
+        Tests that creating a permission without authentication returns a 401 Unauthorized response.
+        """
         permission_data = {
             "user_id": str(SAMPLE_USER_UUID),
             "door_id": str(SAMPLE_DOOR_UUID),
@@ -127,7 +163,11 @@ class TestPermissionsAPI:
         assert response.status_code == 401
 
     def test_list_permissions_success(self, client, mock_admin_user, mock_permission):
-        """Test successful permission listing"""
+        """
+        Tests that an admin user can successfully retrieve a paginated list of permissions.
+        
+        Verifies that the permissions listing endpoint returns the correct pagination metadata and permission data when accessed by an authenticated admin user.
+        """
         with patch('app.api.v1.permissions.ListPermissionsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -161,7 +201,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_list_permissions_with_filters(self, client, mock_admin_user, mock_permission):
-        """Test permission listing with filters"""
+        """
+        Tests listing permissions with query filters as an admin user.
+        
+        Sends a GET request to the permissions endpoint with filter parameters, mocks the use case to return filtered results, asserts the response contains the expected filtered permissions, and verifies the use case is called with correct filter arguments.
+        """
         with patch('app.api.v1.permissions.ListPermissionsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -212,7 +256,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_get_permission_by_id_success(self, client, mock_admin_user, mock_permission):
-        """Test successful permission retrieval by ID"""
+        """
+        Tests that an admin user can successfully retrieve a permission by its ID.
+        
+        Verifies that the API returns a 200 status and the correct permission data when the permission exists.
+        """
         with patch('app.api.v1.permissions.GetPermissionUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -238,7 +286,9 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_get_permission_not_found(self, client, mock_admin_user):
-        """Test permission retrieval with non-existent ID"""
+        """
+        Tests that retrieving a permission with a non-existent ID returns a 404 Not Found response.
+        """
         with patch('app.api.v1.permissions.GetPermissionUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -260,7 +310,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_update_permission_success(self, client, mock_admin_user, mock_permission):
-        """Test successful permission update"""
+        """
+        Tests that an admin user can successfully update a permission via the API.
+        
+        Simulates authentication as an admin, mocks the update use case to return an updated permission, sends a PUT request with update data, and verifies the response reflects the updated fields.
+        """
         with patch('app.api.v1.permissions.UpdatePermissionUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -292,7 +346,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_delete_permission_success(self, client, mock_admin_user, mock_permission):
-        """Test successful permission deletion"""
+        """
+        Tests that an admin user can successfully delete a permission via the API.
+        
+        Verifies that the DELETE endpoint returns a 204 No Content status when the permission is deleted, and that authentication and use case execution are handled correctly.
+        """
         with patch('app.api.v1.permissions.DeletePermissionUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -314,7 +372,9 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_revoke_permission_success(self, client, mock_admin_user, mock_permission):
-        """Test successful permission revocation"""
+        """
+        Tests that an admin user can successfully revoke a permission, updating its status to "suspended".
+        """
         with patch('app.api.v1.permissions.RevokePermissionUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -340,7 +400,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_get_user_permissions_success(self, client, mock_admin_user, mock_permission):
-        """Test successful user permissions retrieval"""
+        """
+        Tests retrieving all permissions for a specific user as an admin.
+        
+        Verifies that the endpoint returns a list of permissions associated with the given user ID and responds with HTTP 200 on success.
+        """
         with patch('app.api.v1.permissions.GetUserPermissionsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -364,7 +428,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_get_door_permissions_success(self, client, mock_admin_user, mock_permission):
-        """Test successful door permissions retrieval"""
+        """
+        Tests retrieving all permissions associated with a specific door as an admin user.
+        
+        Verifies that the API returns a list of permissions for the given door ID with a 200 status code when accessed by an authenticated admin.
+        """
         with patch('app.api.v1.permissions.GetDoorPermissionsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -388,7 +456,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_bulk_create_permissions_success(self, client, mock_admin_user, mock_permission):
-        """Test successful bulk permission creation"""
+        """
+        Tests successful bulk creation of permissions via the API.
+        
+        Simulates an authenticated admin user making a POST request to the bulk permissions endpoint, mocks the use case to return a successful creation summary, and verifies the response contains the correct counts and created permissions.
+        """
         with patch('app.api.v1.permissions.BulkCreatePermissionsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -433,7 +505,11 @@ class TestPermissionsAPI:
             self.cleanup_overrides(client)
 
     def test_permission_validation_errors(self, client, mock_admin_user):
-        """Test permission creation with validation errors"""
+        """
+        Tests that creating a permission with missing or invalid fields returns validation errors.
+        
+        Verifies that the API responds with HTTP 422 when required fields are missing or UUIDs are invalid during permission creation.
+        """
         # Setup authentication
         self.setup_auth_override(client, mock_admin_user)
         

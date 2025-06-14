@@ -29,7 +29,11 @@ from app.application.use_cases.auth_use_cases import CreateUserUseCase
 from datetime import datetime, timezone, UTC
 
 async def create_admin_user():
-    """Create initial admin user"""
+    """
+    Asynchronously creates the initial administrator user if one does not already exist.
+    
+    If an admin user with the predefined email is not found, this function creates the user with default credentials and roles. Logs relevant information about the process and the created user.
+    """
     
     logger.info("🚀 Inicializando usuario administrador...")
     

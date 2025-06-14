@@ -57,7 +57,11 @@ async def create_door(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Create a new door"""
+    """
+    Creates a new door with the specified attributes.
+    
+    Accepts door details including name, location, type, security level, description, PIN requirements, maximum attempts, lockout duration, and an optional default schedule. Returns the created door's information.
+    """
     try:
         logger.info(f"Creating door '{door_data.name}' at location '{door_data.location}'")
         
@@ -104,7 +108,18 @@ async def get_door(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get a door by its database ID"""
+    """
+    Retrieves a door by its unique identifier.
+    
+    Args:
+        door_id: The UUID of the door to retrieve.
+    
+    Returns:
+        A DoorResponse object representing the requested door.
+    
+    Raises:
+        An HTTPException if the door is not found or another error occurs.
+    """
     try:
         get_door_use_case = GetDoorUseCase(door_repository)
         door = await get_door_use_case.execute(door_id)
@@ -127,7 +142,11 @@ async def get_door_by_name(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get a door by its name"""
+    """
+    Retrieves a door by its name.
+    
+    Returns a DoorResponse representing the door with the specified name. Raises an HTTP 404 error if the door is not found.
+    """
     try:
         get_door_use_case = GetDoorByNameUseCase(door_repository)
         door = await get_door_use_case.execute(name)
@@ -147,7 +166,15 @@ async def get_doors_by_location(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get doors by location"""
+    """
+    Retrieves all doors located at the specified location.
+    
+    Args:
+        location: The location to filter doors by.
+    
+    Returns:
+        A list of DoorResponse objects representing doors at the given location.
+    """
     try:
         get_doors_use_case = GetDoorsByLocationUseCase(door_repository)
         doors = await get_doors_use_case.execute(location)
@@ -167,7 +194,15 @@ async def get_doors_by_security_level(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Get doors by security level"""
+    """
+    Retrieves all doors with the specified security level.
+    
+    Args:
+        security_level: The security level to filter doors by.
+    
+    Returns:
+        A list of DoorResponse objects representing doors with the given security level.
+    """
     try:
         get_doors_use_case = GetDoorsBySecurityLevelUseCase(door_repository)
         doors = await get_doors_use_case.execute(security_level)
@@ -189,7 +224,17 @@ async def list_doors(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """List doors with pagination"""
+    """
+    Retrieves a paginated list of doors, with optional filtering for active doors only.
+    
+    Args:
+        skip: The number of doors to skip for pagination.
+        limit: The maximum number of doors to return.
+        active_only: If true, only active doors are included in the results.
+    
+    Returns:
+        A DoorListResponse containing the list of doors, total count, skip, and limit.
+    """
     try:
         if active_only:
             get_doors_use_case = GetActiveDoorsUseCase(door_repository)
@@ -226,7 +271,11 @@ async def update_door(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Update a door"""
+    """
+    Updates the details of an existing door by its UUID.
+    
+    If a default schedule is provided, it is updated along with other door attributes. Returns the updated door information.
+    """
     try:
         logger.info(f"Updating door {door_id}")
         
@@ -272,7 +321,16 @@ async def set_door_status(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Change door status"""
+    """
+    Updates the status of a door identified by its UUID.
+    
+    Args:
+        door_id: The UUID of the door to update.
+        status_data: The new status to set for the door.
+    
+    Returns:
+        The updated door information as a DoorResponse.
+    """
     try:
         logger.info(f"Setting door {door_id} status to {status_data.status}")
         
@@ -297,7 +355,11 @@ async def delete_door(
     door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
-    """Delete a door"""
+    """
+    Deletes a door by its UUID.
+    
+    Raises a 404 error if the door does not exist.
+    """
     try:
         logger.info(f"Deleting door {door_id}")
         

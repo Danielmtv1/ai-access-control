@@ -39,14 +39,23 @@ TEST_DATABASE_URL = os.getenv(
 
 @pytest.fixture(scope="session")
 def event_loop():
-    """Create an instance of the default event loop for the test session."""
+    """
+    Creates and yields a new asyncio event loop for the duration of the test session.
+    
+    Yields:
+        The newly created asyncio event loop, which is closed after the session ends.
+    """
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
 
 @pytest.fixture(scope="session")
 async def test_db():
-    """Create test database"""
+    """
+    Creates a fresh asynchronous SQLAlchemy engine for the test database.
+    
+    Drops all tables before and after the test session to ensure a clean database state. Yields the engine for use in tests and disposes of it after completion.
+    """
     engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -60,7 +69,12 @@ async def test_db():
 
 @pytest.fixture
 async def db_session(test_db):
-    """Create database session for tests"""
+    """
+    Provides an asynchronous SQLAlchemy session for database operations during tests.
+    
+    Yields:
+        An AsyncSession instance scoped to the test, which is closed after use.
+    """
     async_session = async_sessionmaker(
         test_db, class_=AsyncSession, expire_on_commit=False
     )
@@ -72,7 +86,15 @@ async def db_session(test_db):
 
 @pytest.fixture
 async def mqtt_repository(db_session):
-    """Create MQTT repository for tests"""
+    """
+    Creates a SQLAlchemy-based MQTT message repository for testing.
+    
+    Args:
+        db_session: The SQLAlchemy async session used for database operations.
+    
+    Returns:
+        An instance of SqlAlchemyMqttMessageRepository configured with the provided session.
+    """
     repository = SqlAlchemyMqttMessageRepository(db_session)
     return repository
 
@@ -168,18 +190,28 @@ def mock_mqtt_client():
 
 @pytest.fixture
 async def mqtt_client_connected(mock_mqtt_client):
-    """Provide connected mock MQTT client"""
+    """
+    Provides a connected instance of the mock MQTT client for testing.
+    
+    The client is connected before being returned, allowing tests to interact with a simulated MQTT broker.
+    """
     await mock_mqtt_client.connect()
     return mock_mqtt_client
 
 @pytest.fixture
 async def client(db_session):
-    """FastAPI test client with database dependency override"""
+    """
+    Provides an asynchronous FastAPI test client with the database dependency overridden to use the test session.
+    
+    Yields:
+        An `httpx.AsyncClient` instance configured for testing FastAPI endpoints with the test database session.
+    """
     from app.main import app
     from app.shared.database.session import get_db
     
     # Override the database dependency to use test session
     async def override_get_db():
+        Yields the test database session for dependency injection during tests.
         yield db_session
     
     app.dependency_overrides[get_db] = override_get_db
@@ -192,12 +224,21 @@ async def client(db_session):
 
 @pytest.fixture
 async def auth_service():
-    """AuthService instance for testing"""
+    """
+    Provides an AuthService instance for use in authentication-related tests.
+    """
     return AuthService()
 
 @pytest.fixture
 async def admin_user(db_session: AsyncSession, auth_service: AuthService):
-    """Create admin user for authenticated requests."""
+    """
+    Creates and persists an active admin user in the test database.
+    
+    The user is initialized with a hashed password, admin role, and current timestamps, and is committed to the provided async database session.
+    
+    Returns:
+        The created UserModel instance representing the admin user.
+    """
     hashed_password = auth_service.hash_password("AdminPassword123!")
     user_model = UserModel(
         email="admin@test.com",
@@ -215,7 +256,16 @@ async def admin_user(db_session: AsyncSession, auth_service: AuthService):
 
 @pytest.fixture
 async def auth_headers(admin_user: UserModel, auth_service: AuthService):
-    """Authentication headers for API requests."""
+    """
+    Generates authentication headers with a bearer token for the given admin user.
+    
+    Args:
+        admin_user: The admin user model for whom the token is generated.
+        auth_service: The authentication service used to generate the token.
+    
+    Returns:
+        A dictionary containing the Authorization header with a bearer token.
+    """
     token_pair = auth_service.generate_token_pair(
         user_id=str(admin_user.id),
         email=admin_user.email,
@@ -225,7 +275,12 @@ async def auth_headers(admin_user: UserModel, auth_service: AuthService):
 
 @pytest.fixture
 async def test_employee_user(db_session: AsyncSession):
-    """Create employee user for access testing."""
+    """
+    Creates and persists an active employee user in the test database for access control tests.
+    
+    Returns:
+        The created UserModel instance representing the employee user.
+    """
     user_model = UserModel(
         email="employee@test.com",
         hashed_password="hashed_password",
@@ -242,7 +297,12 @@ async def test_employee_user(db_session: AsyncSession):
 
 @pytest.fixture
 async def test_doors(db_session: AsyncSession):
-    """Create test doors with different security levels."""
+    """
+    Creates and persists multiple test door records with varying security levels and statuses.
+    
+    Returns:
+        A list of DoorModel instances representing the created doors.
+    """
     doors = []
     
     # Regular office door
@@ -289,7 +349,14 @@ async def test_doors(db_session: AsyncSession):
 
 @pytest.fixture
 async def test_cards(db_session: AsyncSession, test_employee_user: UserModel):
-    """Create test cards for different scenarios."""
+    """
+    Creates and persists multiple test card records for an employee user.
+    
+    This fixture adds an active employee card, a suspended employee card, and an active master card to the database for use in test scenarios.
+    
+    Returns:
+        A list of CardModel instances representing the created cards.
+    """
     cards = []
     
     # Active employee card
@@ -387,7 +454,11 @@ def sample_user():
 
 @pytest.fixture
 def sample_admin_user():
-    """Sample admin user for testing"""
+    """
+    Creates and returns a sample admin user domain entity for testing purposes.
+    
+    The returned user has admin and operator roles, active status, and preset metadata.
+    """
     return User(
         id=SAMPLE_ADMIN_UUID,
         email="admin@example.com",
@@ -401,7 +472,15 @@ def sample_admin_user():
 
 @pytest.fixture
 def valid_jwt_token(auth_service, sample_user):
-    """Valid JWT token for testing"""
+    """
+    Generates a valid JWT access token for the provided sample user.
+    
+    Args:
+        sample_user: The user entity for whom the token is generated.
+    
+    Returns:
+        A JWT access token string for authentication in tests.
+    """
     return auth_service.generate_access_token(sample_user)
 
 @pytest.fixture
