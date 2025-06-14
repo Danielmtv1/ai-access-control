@@ -1,12 +1,14 @@
 # app/tests/conftest.py
 import pytest
 import asyncio
+import os
 from typing import List, Tuple, Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from fastapi.testclient import TestClient
-from datetime import datetime, UTC, timedelta, time
+from httpx import AsyncClient
+from datetime import datetime, timezone, UTC, timedelta, time
 from uuid import UUID, uuid4
 
 from app.shared.database.base import Base
@@ -17,15 +19,23 @@ from app.domain.value_objects.auth import UserClaims
 from app.domain.entities.mqtt_message import MqttMessage
 from app.domain.entities.card import Card, CardType, CardStatus
 from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
+from app.infrastructure.database.models.user import UserModel
+from app.infrastructure.database.models.card import CardModel
+from app.infrastructure.database.models.door import DoorModel
 
 # Test UUIDs for consistent testing
 SAMPLE_USER_UUID = UUID("12345678-1234-5678-9012-123456789012")
 SAMPLE_ADMIN_UUID = UUID("87654321-4321-8765-2109-876543210987")  
 SAMPLE_CARD_UUID = UUID("11111111-2222-3333-4444-555555555555")
+SAMPLE_CARD_UUID_2 = UUID("22222222-3333-4444-5555-666666666666")
 SAMPLE_DOOR_UUID = UUID("66666666-7777-8888-9999-000000000000")
+SAMPLE_DOOR_UUID_2 = UUID("77777777-8888-9999-0000-111111111111")
 
 # Test Database
-TEST_DATABASE_URL = "postgresql+asyncpg://postgres:postgres@db:5432/postgres_test"
+TEST_DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql+asyncpg://postgres:postgres@db:5432/postgres_test"
+)
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -34,11 +44,12 @@ def event_loop():
     yield loop
     loop.close()
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def test_db():
     """Create test database"""
-    engine = create_async_engine(TEST_DATABASE_URL, echo=True)
+    engine = create_async_engine(TEST_DATABASE_URL, echo=False)
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
     
     yield engine
@@ -53,14 +64,17 @@ async def db_session(test_db):
     async_session = async_sessionmaker(
         test_db, class_=AsyncSession, expire_on_commit=False
     )
-    async with async_session() as session:
+    session = async_session()
+    try:
         yield session
+    finally:
+        await session.close()
 
 @pytest.fixture
 async def mqtt_repository(db_session):
     """Create MQTT repository for tests"""
     repository = SqlAlchemyMqttMessageRepository(db_session)
-    yield repository
+    return repository
 
 class MockMQTTClient:
     """Mock MQTT Client for testing"""
@@ -156,14 +170,172 @@ def mock_mqtt_client():
 async def mqtt_client_connected(mock_mqtt_client):
     """Provide connected mock MQTT client"""
     await mock_mqtt_client.connect()
-    yield mock_mqtt_client
-    await mock_mqtt_client.disconnect()
+    return mock_mqtt_client
 
 @pytest.fixture
-def client():
-    """FastAPI test client"""
+async def client(db_session):
+    """FastAPI test client with database dependency override"""
     from app.main import app
-    return TestClient(app)
+    from app.shared.database.session import get_db
+    
+    # Override the database dependency to use test session
+    async def override_get_db():
+        yield db_session
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+    
+    # Clean up the override after the test
+    del app.dependency_overrides[get_db]
+
+@pytest.fixture
+async def auth_service():
+    """AuthService instance for testing"""
+    return AuthService()
+
+@pytest.fixture
+async def admin_user(db_session: AsyncSession, auth_service: AuthService):
+    """Create admin user for authenticated requests."""
+    hashed_password = auth_service.hash_password("AdminPassword123!")
+    user_model = UserModel(
+        email="admin@test.com",
+        hashed_password=hashed_password,
+        full_name="Admin User",
+        roles=["admin"],
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    db_session.add(user_model)
+    await db_session.commit()
+    await db_session.refresh(user_model)
+    return user_model
+
+@pytest.fixture
+async def auth_headers(admin_user: UserModel, auth_service: AuthService):
+    """Authentication headers for API requests."""
+    token_pair = auth_service.generate_token_pair(
+        user_id=str(admin_user.id),
+        email=admin_user.email,
+        roles=admin_user.roles
+    )
+    return {"Authorization": f"Bearer {token_pair.access_token}"}
+
+@pytest.fixture
+async def test_employee_user(db_session: AsyncSession):
+    """Create employee user for access testing."""
+    user_model = UserModel(
+        email="employee@test.com",
+        hashed_password="hashed_password",
+        full_name="Employee User",
+        roles=["user"],
+        is_active=True,
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    db_session.add(user_model)
+    await db_session.commit()
+    await db_session.refresh(user_model)
+    return user_model
+
+@pytest.fixture
+async def test_doors(db_session: AsyncSession):
+    """Create test doors with different security levels."""
+    doors = []
+    
+    # Regular office door
+    office_door = DoorModel(
+        name="Office Door",
+        location="Building A - Floor 1",
+        security_level="low",
+        status="active",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    # Server room with high security
+    server_door = DoorModel(
+        name="Server Room",
+        location="Building A - Basement",
+        security_level="high",
+        status="active",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    # Maintenance door
+    maintenance_door = DoorModel(
+        name="Maintenance Room",
+        location="Building A - Basement",
+        security_level="medium",
+        status="maintenance",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    doors.extend([office_door, server_door, maintenance_door])
+    
+    for door in doors:
+        db_session.add(door)
+    
+    await db_session.commit()
+    
+    for door in doors:
+        await db_session.refresh(door)
+    
+    return doors
+
+@pytest.fixture
+async def test_cards(db_session: AsyncSession, test_employee_user: UserModel):
+    """Create test cards for different scenarios."""
+    cards = []
+    
+    # Active employee card
+    active_card = CardModel(
+        user_id=test_employee_user.id,
+        card_id="EMP001",
+        card_type="employee",
+        status="active",
+        valid_from=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    # Suspended card
+    suspended_card = CardModel(
+        user_id=test_employee_user.id,
+        card_id="EMP002",
+        card_type="employee",
+        status="suspended",
+        valid_from=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    # Master card
+    master_card = CardModel(
+        user_id=test_employee_user.id,
+        card_id="MASTER001",
+        card_type="master",
+        status="active",
+        valid_from=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+    
+    cards.extend([active_card, suspended_card, master_card])
+    
+    for card in cards:
+        db_session.add(card)
+    
+    await db_session.commit()
+    
+    for card in cards:
+        await db_session.refresh(card)
+    
+    return cards
 
 # Utility functions for tests
 @pytest.fixture
@@ -226,16 +398,6 @@ def sample_admin_user():
         created_at=datetime.now(UTC),
         updated_at=datetime.now(UTC)
     )
-
-@pytest.fixture
-def auth_service():
-    """AuthService instance for testing"""
-    return AuthService()
-
-@pytest.fixture
-def mock_user_repository():
-    """Mock user repository for testing"""
-    return AsyncMock()
 
 @pytest.fixture
 def valid_jwt_token(auth_service, sample_user):

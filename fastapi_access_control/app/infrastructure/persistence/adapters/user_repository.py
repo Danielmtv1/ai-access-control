@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import Optional, List, Callable
+from uuid import UUID
 from app.ports.user_repository_port import UserRepositoryPort
 from app.domain.entities.user import User
 from app.infrastructure.database.models.user import UserModel
@@ -34,7 +35,7 @@ class SqlAlchemyUserRepository(UserRepositoryPort):
                 logger.error(f"Database error creating user: {e}")
                 raise RepositoryError(f"Error creating user: {e}") from e
     
-    async def get_by_id(self, user_id: int) -> Optional[User]:
+    async def get_by_id(self, user_id: UUID) -> Optional[User]:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -81,7 +82,7 @@ class SqlAlchemyUserRepository(UserRepositoryPort):
                 logger.error(f"Database error updating user: {e}")
                 raise RepositoryError(f"Error updating user: {e}") from e
     
-    async def delete(self, user_id: int) -> bool:
+    async def delete(self, user_id: UUID) -> bool:
         async with self.session_factory() as db:
             try:
                 result = await db.execute(

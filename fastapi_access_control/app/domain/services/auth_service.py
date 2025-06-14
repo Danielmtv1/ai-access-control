@@ -1,6 +1,6 @@
 import bcrypt
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 from uuid import UUID
 from ..entities.user import User, Role
@@ -27,7 +27,7 @@ class AuthService:
     
     def generate_access_token(self, user: User) -> str:
         """Generate JWT access token"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         payload = {
             "sub": str(user.id),
             "email": user.email,
@@ -46,11 +46,11 @@ class AuthService:
     
     def generate_refresh_token(self, user: User) -> str:
         """Generate JWT refresh token"""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         payload = {
             "sub": str(user.id),
             "iat": now,
-            "exp": now + timedelta(days=7),  # 7 days
+            "exp": now + timedelta(days=self.settings.REFRESH_TOKEN_EXPIRE_DAYS),
             "type": "refresh"
         }
         

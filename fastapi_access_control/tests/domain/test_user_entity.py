@@ -2,10 +2,11 @@
 Tests for User entity
 """
 import pytest
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from uuid import UUID, uuid4
 
 from app.domain.entities.user import User, Role, UserStatus
+from tests.conftest import SAMPLE_USER_UUID, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2, SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2
 
 
 class TestUser:

@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 from typing import List
 from app.domain.entities.door import Door
-from app.infrastructure.persistence.adapters.door_repository import SqlAlchemyDoorRepository
-from app.shared.database import AsyncSessionLocal
 from app.application.use_cases.door_use_cases import (
     CreateDoorUseCase, GetDoorUseCase, GetDoorByNameUseCase, GetDoorsByLocationUseCase,
     UpdateDoorUseCase, SetDoorStatusUseCase, ListDoorsUseCase, GetActiveDoorsUseCase,
@@ -13,7 +11,11 @@ from app.api.schemas.door_schemas import (
 )
 from app.api.error_handlers import map_domain_error_to_http
 from app.api.dependencies.auth_dependencies import get_current_active_user
+from app.api.dependencies.repository_dependencies import get_door_repository
+from app.ports.door_repository_port import DoorRepositoryPort
+from app.config import get_settings
 import logging
+from uuid import UUID
 
 logger = logging.getLogger(__name__)
 
@@ -29,9 +31,6 @@ router = APIRouter(
     }
 )
 
-def get_door_repository():
-    """Dependency to get DoorRepository instance"""
-    return SqlAlchemyDoorRepository(session_factory=AsyncSessionLocal)
 
 @router.post(
     "/",
@@ -55,7 +54,7 @@ def get_door_repository():
 )
 async def create_door(
     door_data: CreateDoorRequest = Body(..., description="Door creation data"),
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Create a new door"""
@@ -101,8 +100,8 @@ async def create_door(
     }
 )
 async def get_door(
-    door_id: int,
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_id: UUID,
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get a door by its database ID"""
@@ -125,7 +124,7 @@ async def get_door(
 )
 async def get_door_by_name(
     name: str,
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get a door by its name"""
@@ -145,7 +144,7 @@ async def get_door_by_name(
 )
 async def get_doors_by_location(
     location: str,
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get doors by location"""
@@ -165,7 +164,7 @@ async def get_doors_by_location(
 )
 async def get_doors_by_security_level(
     security_level: str,
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Get doors by security level"""
@@ -185,9 +184,9 @@ async def get_doors_by_security_level(
 )
 async def list_doors(
     skip: int = Query(0, ge=0, description="Number of doors to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of doors to return"),
+    limit: int = Query(get_settings().DEFAULT_PAGE_SIZE, ge=1, le=get_settings().MAX_PAGE_SIZE, description="Maximum number of doors to return"),
     active_only: bool = Query(False, description="Only return active doors"),
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """List doors with pagination"""
@@ -222,9 +221,9 @@ async def list_doors(
     description="Update door information"
 )
 async def update_door(
-    door_id: int,
+    door_id: UUID,
     door_data: UpdateDoorRequest = Body(..., description="Door update data"),
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Update a door"""
@@ -268,9 +267,9 @@ async def update_door(
     description="Change the status of a door (active, maintenance, emergency, etc.)"
 )
 async def set_door_status(
-    door_id: int,
+    door_id: UUID,
     status_data: DoorStatusRequest = Body(..., description="New door status"),
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Change door status"""
@@ -294,8 +293,8 @@ async def set_door_status(
     description="Delete a door permanently"
 )
 async def delete_door(
-    door_id: int,
-    door_repository: SqlAlchemyDoorRepository = Depends(get_door_repository),
+    door_id: UUID,
+    door_repository: DoorRepositoryPort = Depends(get_door_repository),
     current_user = Depends(get_current_active_user)
 ):
     """Delete a door"""

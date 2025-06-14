@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -40,7 +40,7 @@ async def test_save_message(repository, mock_session):
     
     # Mock the model after refresh
     mock_model = MqttMessageModel(
-        id=1,
+        id=SAMPLE_CARD_UUID,
         topic=message.topic,
         message=message.message,
         timestamp=message.timestamp
@@ -65,13 +65,13 @@ async def test_get_all_messages(repository, mock_session):
     # Create test models
     models = [
         MqttMessageModel(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             topic="test/topic1",
             message="message1",
             timestamp=datetime.now(UTC)
         ),
         MqttMessageModel(
-            id=2,
+            id=SAMPLE_CARD_UUID_2,
             topic="test/topic2",
             message="message2",
             timestamp=datetime.now(UTC)
@@ -98,7 +98,7 @@ async def test_get_message_by_id(repository, mock_session):
     """Test getting message by ID"""
     # Create test model
     model = MqttMessageModel(
-        id=1,
+        id=SAMPLE_CARD_UUID,
         topic="test/topic",
         message="test message",
         timestamp=datetime.now(UTC)
@@ -125,13 +125,13 @@ async def test_get_messages_by_topic(repository, mock_session):
     # Create test models
     models = [
         MqttMessageModel(
-            id=1,
+            id=SAMPLE_CARD_UUID,
             topic="test/topic",
             message="message1",
             timestamp=datetime.now(UTC)
         ),
         MqttMessageModel(
-            id=2,
+            id=SAMPLE_CARD_UUID_2,
             topic="test/topic",
             message="message2",
             timestamp=datetime.now(UTC)

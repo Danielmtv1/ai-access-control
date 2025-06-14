@@ -20,11 +20,17 @@ def add_security_middleware(app: FastAPI):
         RateLimitMiddleware,
         requests_per_minute=60,
         window_size=60,
-        exclude_paths=["/docs", "/redoc", "/openapi.json", "/metrics"]
+        exclude_paths=["/docs", "/redoc", "/openapi.json", "/metrics"]  # ← Sin / final
     )
     
-    # Security Headers - Configuración más permisiva para desarrollo
+    # Security Headers - CSP permisiva para ReDoc
     app.add_middleware(
         SecurityHeadersMiddleware,
-        content_security_policy="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data:; img-src 'self' data: https:; font-src 'self' https: data:;"
-    ) 
+        content_security_policy=(
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:; "
+            "worker-src 'self' blob:; "  # ← Esto es clave para ReDoc
+            "img-src 'self' data: https:; "
+            "font-src 'self' https: data:;"
+        )
+    )

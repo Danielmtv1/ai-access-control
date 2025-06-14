@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timezone, UTC, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.persistence.adapters.card_repository import SqlAlchemyCardRepository
 from app.infrastructure.database.models.card import CardModel
@@ -141,7 +141,7 @@ class TestSqlAlchemyCardRepository:
         card = Card(
             id=999,  # Non-existent ID
             card_id="CARD999",
-            user_id=1,
+            user_id=SAMPLE_CARD_UUID,
             card_type=CardType.EMPLOYEE,
             status=CardStatus.ACTIVE,
             valid_from=now,

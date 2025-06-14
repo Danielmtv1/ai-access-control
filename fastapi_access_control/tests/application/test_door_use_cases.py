@@ -1,13 +1,14 @@
 import pytest
 from unittest.mock import AsyncMock
-from datetime import datetime, UTC, timedelta, time
+from datetime import datetime, timezone, UTC, timedelta, time
 from app.application.use_cases.door_use_cases import (
     CreateDoorUseCase, GetDoorUseCase, GetDoorByNameUseCase, GetDoorsByLocationUseCase,
     UpdateDoorUseCase, SetDoorStatusUseCase, ListDoorsUseCase, GetActiveDoorsUseCase,
-    GetDoorsBySecurityLevelUseCase, DeleteDoorUseCase, DoorNotFoundError
+    GetDoorsBySecurityLevelUseCase, DeleteDoorUseCase
 )
 from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
-from app.domain.exceptions import DomainError
+from app.domain.exceptions import DomainError, DoorNotFoundError, EntityAlreadyExistsError
+from tests.conftest import SAMPLE_DOOR_UUID, SAMPLE_DOOR_UUID_2, SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2
 
 class TestCreateDoorUseCase:
     """Test cases for CreateDoorUseCase"""
@@ -30,7 +31,7 @@ class TestCreateDoorUseCase:
         
         # Mock door creation
         expected_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -73,7 +74,7 @@ class TestCreateDoorUseCase:
         
         # Mock door name already exists
         existing_door = Door(
-            id=2,
+            id=SAMPLE_DOOR_UUID_2,
             name="Main Entrance",
             location="Building B",
             door_type=DoorType.ENTRANCE,
@@ -85,7 +86,7 @@ class TestCreateDoorUseCase:
         mock_door_repository.get_by_name.return_value = existing_door
         
         # Execute and verify exception
-        with pytest.raises(DomainError, match="Door with name 'Main Entrance' already exists"):
+        with pytest.raises(EntityAlreadyExistsError, match="Door with identifier 'Main Entrance' already exists"):
             await create_door_use_case.execute(
                 name="Main Entrance",
                 location="Building A",
@@ -111,7 +112,7 @@ class TestCreateDoorUseCase:
             end_time=time(18, 0)
         )
         expected_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Office Door",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -159,7 +160,7 @@ class TestGetDoorUseCase:
         """Test successful door retrieval"""
         now = datetime.now(UTC).replace(tzinfo=None)
         expected_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -170,17 +171,17 @@ class TestGetDoorUseCase:
         )
         mock_door_repository.get_by_id.return_value = expected_door
         
-        result = await get_door_use_case.execute(1)
+        result = await get_door_use_case.execute(SAMPLE_DOOR_UUID)
         
         assert result == expected_door
-        mock_door_repository.get_by_id.assert_called_once_with(1)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
     
     @pytest.mark.asyncio
     async def test_get_door_not_found(self, get_door_use_case, mock_door_repository):
         """Test door retrieval when door doesn't exist"""
         mock_door_repository.get_by_id.return_value = None
         
-        with pytest.raises(DoorNotFoundError, match="Door with ID 999 not found"):
+        with pytest.raises(DoorNotFoundError, match="Door with identifier '999' not found"):
             await get_door_use_case.execute(999)
         
         mock_door_repository.get_by_id.assert_called_once_with(999)
@@ -201,7 +202,7 @@ class TestUpdateDoorUseCase:
         """Test successful door update"""
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -212,7 +213,7 @@ class TestUpdateDoorUseCase:
         )
         
         updated_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance - Updated",  # Updated
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -227,14 +228,14 @@ class TestUpdateDoorUseCase:
         mock_door_repository.update.return_value = updated_door
         
         result = await update_door_use_case.execute(
-            door_id=1,
+            door_id=SAMPLE_DOOR_UUID,
             name="Main Entrance - Updated",
             security_level="high"
         )
         
         assert result.name == "Main Entrance - Updated"
         assert result.security_level == SecurityLevel.HIGH
-        mock_door_repository.get_by_id.assert_called_once_with(1)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
         mock_door_repository.update.assert_called_once()
     
     @pytest.mark.asyncio
@@ -242,7 +243,7 @@ class TestUpdateDoorUseCase:
         """Test door update when door doesn't exist"""
         mock_door_repository.get_by_id.return_value = None
         
-        with pytest.raises(DoorNotFoundError, match="Door with ID 999 not found"):
+        with pytest.raises(DoorNotFoundError, match="Door with identifier '999' not found"):
             await update_door_use_case.execute(door_id=999, name="New Name")
         
         mock_door_repository.get_by_id.assert_called_once_with(999)
@@ -253,7 +254,7 @@ class TestUpdateDoorUseCase:
         """Test door update fails when new name already exists for another door"""
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -264,7 +265,7 @@ class TestUpdateDoorUseCase:
         )
         
         conflicting_door = Door(
-            id=2,
+            id=SAMPLE_DOOR_UUID_2,
             name="Side Entrance",  # This name is already taken
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -277,10 +278,10 @@ class TestUpdateDoorUseCase:
         mock_door_repository.get_by_id.return_value = original_door
         mock_door_repository.get_by_name.return_value = conflicting_door
         
-        with pytest.raises(DomainError, match="Door with name 'Side Entrance' already exists"):
-            await update_door_use_case.execute(door_id=1, name="Side Entrance")
+        with pytest.raises(EntityAlreadyExistsError, match="Door with identifier 'Side Entrance' already exists"):
+            await update_door_use_case.execute(door_id=SAMPLE_DOOR_UUID, name="Side Entrance")
         
-        mock_door_repository.get_by_id.assert_called_once_with(1)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
         mock_door_repository.get_by_name.assert_called_once_with("Side Entrance")
         mock_door_repository.update.assert_not_called()
 
@@ -300,7 +301,7 @@ class TestSetDoorStatusUseCase:
         """Test setting door status to active"""
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -314,7 +315,7 @@ class TestSetDoorStatusUseCase:
         
         # Simulate door being activated (domain logic resets failed attempts)
         activated_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -329,12 +330,12 @@ class TestSetDoorStatusUseCase:
         mock_door_repository.get_by_id.return_value = original_door
         mock_door_repository.update.return_value = activated_door
         
-        result = await set_door_status_use_case.execute(1, "active")
+        result = await set_door_status_use_case.execute(SAMPLE_DOOR_UUID, "active")
         
         assert result.status == DoorStatus.ACTIVE
         assert result.failed_attempts == 0
         assert result.locked_until is None
-        mock_door_repository.get_by_id.assert_called_once_with(1)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
         mock_door_repository.update.assert_called_once()
     
     @pytest.mark.asyncio
@@ -342,7 +343,7 @@ class TestSetDoorStatusUseCase:
         """Test setting door status to emergency open"""
         now = datetime.now(UTC).replace(tzinfo=None)
         original_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -353,7 +354,7 @@ class TestSetDoorStatusUseCase:
         )
         
         emergency_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -366,10 +367,10 @@ class TestSetDoorStatusUseCase:
         mock_door_repository.get_by_id.return_value = original_door
         mock_door_repository.update.return_value = emergency_door
         
-        result = await set_door_status_use_case.execute(1, "emergency_open")
+        result = await set_door_status_use_case.execute(SAMPLE_DOOR_UUID, "emergency_open")
         
         assert result.status == DoorStatus.EMERGENCY_OPEN
-        mock_door_repository.get_by_id.assert_called_once_with(1)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
         mock_door_repository.update.assert_called_once()
 
 class TestListDoorsUseCase:
@@ -389,7 +390,7 @@ class TestListDoorsUseCase:
         now = datetime.now(UTC).replace(tzinfo=None)
         doors = [
             Door(
-                id=1,
+                id=SAMPLE_DOOR_UUID,
                 name="Main Entrance",
                 location="Building A",
                 door_type=DoorType.ENTRANCE,
@@ -399,7 +400,7 @@ class TestListDoorsUseCase:
                 updated_at=now
             ),
             Door(
-                id=2,
+                id=SAMPLE_DOOR_UUID_2,
                 name="Side Entrance",
                 location="Building A",
                 door_type=DoorType.ENTRANCE,
@@ -436,7 +437,7 @@ class TestGetActiveDoorsUseCase:
         now = datetime.now(UTC).replace(tzinfo=None)
         active_doors = [
             Door(
-                id=1,
+                id=SAMPLE_DOOR_UUID,
                 name="Main Entrance",
                 location="Building A",
                 door_type=DoorType.ENTRANCE,
@@ -471,7 +472,7 @@ class TestDeleteDoorUseCase:
         """Test successful door deletion"""
         now = datetime.now(UTC).replace(tzinfo=None)
         existing_door = Door(
-            id=1,
+            id=SAMPLE_DOOR_UUID,
             name="Main Entrance",
             location="Building A",
             door_type=DoorType.ENTRANCE,
@@ -484,19 +485,19 @@ class TestDeleteDoorUseCase:
         mock_door_repository.get_by_id.return_value = existing_door
         mock_door_repository.delete.return_value = True
         
-        result = await delete_door_use_case.execute(1)
+        result = await delete_door_use_case.execute(SAMPLE_DOOR_UUID)
         
         assert result is True
-        mock_door_repository.get_by_id.assert_called_once_with(1)
-        mock_door_repository.delete.assert_called_once_with(1)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
+        mock_door_repository.delete.assert_called_once_with(SAMPLE_DOOR_UUID)
     
     @pytest.mark.asyncio
     async def test_delete_door_not_found(self, delete_door_use_case, mock_door_repository):
         """Test door deletion when door doesn't exist"""
         mock_door_repository.get_by_id.return_value = None
         
-        with pytest.raises(DoorNotFoundError, match="Door with ID 999 not found"):
-            await delete_door_use_case.execute(999)
+        with pytest.raises(DoorNotFoundError, match="Door with identifier .* not found"):
+            await delete_door_use_case.execute(SAMPLE_DOOR_UUID)
         
-        mock_door_repository.get_by_id.assert_called_once_with(999)
+        mock_door_repository.get_by_id.assert_called_once_with(SAMPLE_DOOR_UUID)
         mock_door_repository.delete.assert_not_called()

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
+from uuid import UUID
 
 class MqttMessageBase(BaseModel):
     """Base schema for MQTT message data"""
@@ -13,7 +14,7 @@ class MqttMessageCreate(MqttMessageBase):
 
 class MqttMessageResponse(MqttMessageBase):
     """Schema for MQTT message response"""
-    id: int = Field(..., description="Unique message identifier")
+    id: UUID = Field(..., description="Unique message identifier")
     timestamp: datetime = Field(..., description="Message timestamp")
     
     class Config:

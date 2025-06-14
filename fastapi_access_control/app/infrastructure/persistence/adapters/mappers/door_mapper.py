@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from app.domain.entities.door import Door, DoorType, SecurityLevel, DoorStatus, AccessSchedule
 from app.infrastructure.database.models.door import DoorModel
@@ -102,5 +102,5 @@ class DoorMapper:
         model.failed_attempts = door.failed_attempts
         model.locked_until = door.locked_until
         model.last_access = door.last_access
-        model.updated_at = datetime.utcnow()
+        model.updated_at = datetime.now()
         return model

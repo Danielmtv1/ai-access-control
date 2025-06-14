@@ -1,6 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import Column, DateTime, func
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any
 
 class Base(DeclarativeBase):
@@ -10,8 +10,8 @@ class Base(DeclarativeBase):
     """
     
     # Campos de auditoría comunes (opcional)
-    # created_at = Column(DateTime, default=datetime.utcnow, server_default=func.now())
-    # updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # created_at = Column(DateTime, default=timezone.utcnow, server_default=func.now())
+    # updated_at = Column(DateTime, default=timezone.utcnow, onupdate=timezone.utcnow)
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert model instance to dictionary"""

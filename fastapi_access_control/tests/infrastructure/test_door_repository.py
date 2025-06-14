@@ -1,6 +1,6 @@
 import pytest
 import json
-from datetime import datetime, UTC, timedelta, time
+from datetime import datetime, timezone, UTC, timedelta, time
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.infrastructure.persistence.adapters.door_repository import SqlAlchemyDoorRepository
 from app.infrastructure.database.models.door import DoorModel

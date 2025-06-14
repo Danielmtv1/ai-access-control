@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
+from uuid import UUID
 from ..domain.entities.card import Card
 
 class CardRepositoryPort(ABC):
@@ -11,7 +12,7 @@ class CardRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def get_by_id(self, card_id: int) -> Optional[Card]:
+    async def get_by_id(self, card_id: UUID) -> Optional[Card]:
         """Get card by ID"""
         pass
     
@@ -21,7 +22,7 @@ class CardRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def get_by_user_id(self, user_id: int) -> List[Card]:
+    async def get_by_user_id(self, user_id: UUID) -> List[Card]:
         """Get all cards for a user"""
         pass
     
@@ -31,7 +32,7 @@ class CardRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def delete(self, card_id: int) -> bool:
+    async def delete(self, card_id: UUID) -> bool:
         """Delete card by ID"""
         pass
     

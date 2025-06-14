@@ -26,7 +26,7 @@ from app.domain.entities.user import User, Role, UserStatus
 from app.domain.services.auth_service import AuthService
 from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
 from app.application.use_cases.auth_use_cases import CreateUserUseCase
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 
 async def create_admin_user():
     """Create initial admin user"""

@@ -6,8 +6,19 @@ from app.domain.errors.auth_errors import (
     UserInactiveError,
     InsufficientPermissionsError
 )
-from app.domain.exceptions import DomainError
-from app.application.use_cases.card_use_cases import CardNotFoundError
+from app.domain.exceptions import (
+    DomainError,
+    EntityNotFoundError,
+    CardNotFoundError,
+    DoorNotFoundError,
+    UserNotFoundError,
+    PermissionNotFoundError,
+    EntityAlreadyExistsError,
+    InvalidCardError,
+    InvalidDoorError,
+    AccessDeniedError,
+    InvalidPinError
+)
 
 def map_domain_error_to_http(error: Exception) -> HTTPException:
     """Map domain errors to HTTP exceptions"""
@@ -43,34 +54,39 @@ def map_domain_error_to_http(error: Exception) -> HTTPException:
             detail=error.message
         )
     
-    # Handle card-specific errors
-    if isinstance(error, CardNotFoundError):
+    # Handle Entity Not Found errors with unified hierarchy
+    if isinstance(error, EntityNotFoundError):
         return HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error)
         )
     
+    # Handle Entity Already Exists errors
+    if isinstance(error, EntityAlreadyExistsError):
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(error)
+        )
+    
+    # Handle Access Control errors
+    if isinstance(error, AccessDeniedError):
+        return HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(error)
+        )
+    
+    if isinstance(error, (InvalidCardError, InvalidDoorError, InvalidPinError)):
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        )
+    
     # Handle general domain errors
     if isinstance(error, DomainError):
-        # Check if it's a "not found" error
-        error_message = str(error)
-        if "not found" in error_message.lower():
-            return HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=error_message
-            )
-        # Check if it's a "already exists" error
-        elif "already exists" in error_message.lower():
-            return HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=error_message
-            )
-        # Other domain errors as bad request
-        else:
-            return HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=error_message
-            )
+        return HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error)
+        )
     
     # Default error
     return HTTPException(

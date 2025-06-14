@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from app.domain.entities.user import User
 from app.domain.services.auth_service import AuthService
-from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
-from app.shared.database import AsyncSessionLocal
 from app.application.use_cases.auth_use_cases import AuthenticateUserUseCase, RefreshTokenUseCase
 from app.api.schemas.auth_schemas import TokenResponse, RefreshTokenRequest, LoginRequest
 from app.api.error_handlers import map_domain_error_to_http
+from app.api.dependencies.repository_dependencies import get_user_repository
+from app.ports.user_repository_port import UserRepositoryPort
 from app.domain.errors.auth_errors import InvalidCredentialsError, InvalidTokenError
 import logging
 
@@ -27,9 +27,6 @@ def get_auth_service():
     """Dependency to get AuthService instance"""
     return AuthService()
 
-def get_user_repository():
-    """Dependency to get UserRepository instance"""
-    return SqlAlchemyUserRepository(session_factory=AsyncSessionLocal)
 
 @router.post(
     "/login",
@@ -85,7 +82,7 @@ async def login(
         description="User credentials"
     ),
     auth_service: AuthService = Depends(get_auth_service),
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository)
+    user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
     """
     Authenticate a user and return JWT tokens.
@@ -176,7 +173,7 @@ async def refresh_token(
         description="Refresh token from previous login"
     ),
     auth_service: AuthService = Depends(get_auth_service),
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository)
+    user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
     """
     Refresh the access token using a refresh token.
@@ -248,7 +245,7 @@ async def refresh_token(
 async def token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     auth_service: AuthService = Depends(get_auth_service),
-    user_repository: SqlAlchemyUserRepository = Depends(get_user_repository)
+    user_repository: UserRepositoryPort = Depends(get_user_repository)
 ):
     """
     OAuth2 compatible token endpoint for authentication.

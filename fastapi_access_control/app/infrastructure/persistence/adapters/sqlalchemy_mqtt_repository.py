@@ -1,4 +1,5 @@
 from typing import List, Optional
+from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import desc
@@ -53,7 +54,7 @@ class SqlAlchemyMqttMessageRepository(MqttMessageRepositoryPort):
         except Exception as e:
             raise RepositoryError(f"Error getting MQTT messages by topic: {str(e)}")
     
-    async def get_by_id(self, message_id: int) -> Optional[MqttMessage]:
+    async def get_by_id(self, message_id: UUID) -> Optional[MqttMessage]:
         """Get MQTT message by ID"""
         try:
             async with self.session_factory() as session:

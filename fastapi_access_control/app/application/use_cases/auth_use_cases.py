@@ -3,8 +3,8 @@ from ...domain.entities.user import User, Role, UserStatus
 from ...domain.services.auth_service import AuthService
 from ...domain.value_objects.auth import TokenPair, UserClaims
 from ...ports.user_repository_port import UserRepositoryPort
-from ...domain.exceptions import DomainError
-from datetime import datetime, UTC
+from ...domain.exceptions import DomainError, UserNotFoundError, EntityAlreadyExistsError
+from datetime import datetime, timezone, UTC
 from uuid import UUID
 import logging
 
@@ -47,7 +47,7 @@ class AuthenticateUserUseCase:
         
         logger.info(f"Autenticación exitosa para usuario: {email}")
         # Update last login
-        user.last_login = datetime.utcnow()
+        user.last_login = datetime.now(timezone.utc)
         await self.user_repository.update(user)
         
         # Generate tokens
@@ -97,7 +97,7 @@ class CreateUserUseCase:
         # Check if user already exists
         existing_user = await self.user_repository.get_by_email(email)
         if existing_user:
-            raise DomainError("User with this email already exists")
+            raise EntityAlreadyExistsError("User", email)
         
         # Hash password
         hashed_password = self.auth_service.hash_password(password)

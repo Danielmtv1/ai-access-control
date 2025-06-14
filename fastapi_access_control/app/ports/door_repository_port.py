@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 from ..domain.entities.door import Door
-
+from uuid import UUID
 class DoorRepositoryPort(ABC):
     """Port for Door repository operations"""
     
@@ -11,7 +11,7 @@ class DoorRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def get_by_id(self, door_id: int) -> Optional[Door]:
+    async def get_by_id(self, door_id: UUID) -> Optional[Door]:
         """Get door by ID"""
         pass
     
@@ -31,7 +31,7 @@ class DoorRepositoryPort(ABC):
         pass
     
     @abstractmethod
-    async def delete(self, door_id: int) -> bool:
+    async def delete(self, door_id: UUID) -> bool:
         """Delete door by ID"""
         pass
     

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
+from uuid import UUID
 
 @dataclass(frozen=True)
 class AuthError(Exception):
@@ -29,7 +30,7 @@ class InvalidTokenError(AuthError):
 @dataclass(frozen=True)
 class UserInactiveError(AuthError):
     """Error when user account is inactive"""
-    def __init__(self, user_id: int):
+    def __init__(self, user_id: UUID):
         super().__init__(
             message=f"User {user_id} is inactive",
             code="USER_INACTIVE",

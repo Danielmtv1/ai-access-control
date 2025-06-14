@@ -1,17 +1,15 @@
 from typing import Optional, List
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 from uuid import UUID
 from ...domain.entities.card import Card, CardType, CardStatus
 from ...ports.card_repository_port import CardRepositoryPort
 from ...ports.user_repository_port import UserRepositoryPort
-from ...domain.exceptions import DomainError
+from ...domain.exceptions import (
+    DomainError, CardNotFoundError, UserNotFoundError, EntityAlreadyExistsError
+)
 import logging
 
 logger = logging.getLogger(__name__)
-
-class CardNotFoundError(DomainError):
-    """Card not found error"""
-    pass
 
 class CreateCardUseCase:
     """Use case for creating new cards"""
@@ -33,12 +31,12 @@ class CreateCardUseCase:
         # Check if user exists
         user = await self.user_repository.get_by_id(user_id)
         if not user:
-            raise DomainError(f"User with ID {user_id} not found")
+            raise UserNotFoundError(str(user_id))
         
         # Check if card ID already exists
         existing_card = await self.card_repository.get_by_card_id(card_id)
         if existing_card:
-            raise DomainError(f"Card with ID {card_id} already exists")
+            raise EntityAlreadyExistsError("Card", card_id)
         
         # Create card entity
         now = datetime.now(UTC).replace(tzinfo=None)
@@ -68,7 +66,7 @@ class GetCardUseCase:
         """Get card by ID"""
         card = await self.card_repository.get_by_id(card_id)
         if not card:
-            raise CardNotFoundError(f"Card with ID {card_id} not found")
+            raise CardNotFoundError(str(card_id))
         return card
 
 class GetCardByCardIdUseCase:
@@ -81,7 +79,7 @@ class GetCardByCardIdUseCase:
         """Get card by physical card ID"""
         card = await self.card_repository.get_by_card_id(card_id)
         if not card:
-            raise CardNotFoundError(f"Card with card_id {card_id} not found")
+            raise CardNotFoundError(card_id)
         return card
 
 class GetUserCardsUseCase:
@@ -110,7 +108,7 @@ class UpdateCardUseCase:
         # Get existing card
         card = await self.card_repository.get_by_id(card_id)
         if not card:
-            raise CardNotFoundError(f"Card with ID {card_id} not found")
+            raise CardNotFoundError(str(card_id))
         
         # Update fields if provided
         if card_type:
@@ -118,7 +116,11 @@ class UpdateCardUseCase:
         if status:
             card.status = CardStatus(status)
         if valid_until is not None:
-            card.valid_until = valid_until
+            # Convert to timezone-naive if it has timezone info
+            if valid_until.tzinfo:
+                card.valid_until = valid_until.replace(tzinfo=None)
+            else:
+                card.valid_until = valid_until
         
         card.updated_at = datetime.now(UTC).replace(tzinfo=None)
         
@@ -137,7 +139,7 @@ class DeactivateCardUseCase:
         # Get existing card
         card = await self.card_repository.get_by_id(card_id)
         if not card:
-            raise CardNotFoundError(f"Card with ID {card_id} not found")
+            raise CardNotFoundError(str(card_id))
         
         # Deactivate card
         card.status = CardStatus.INACTIVE
@@ -158,7 +160,7 @@ class SuspendCardUseCase:
         # Get existing card
         card = await self.card_repository.get_by_id(card_id)
         if not card:
-            raise CardNotFoundError(f"Card with ID {card_id} not found")
+            raise CardNotFoundError(str(card_id))
         
         # Suspend card
         card.suspend()
@@ -188,7 +190,7 @@ class DeleteCardUseCase:
         # Check if card exists
         card = await self.card_repository.get_by_id(card_id)
         if not card:
-            raise CardNotFoundError(f"Card with ID {card_id} not found")
+            raise CardNotFoundError(str(card_id))
         
         logger.info(f"Deleting card {card_id}")
         return await self.card_repository.delete(card_id)

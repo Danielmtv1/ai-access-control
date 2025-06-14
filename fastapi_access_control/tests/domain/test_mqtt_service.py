@@ -3,11 +3,12 @@ Tests for MQTT message service
 """
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime, UTC
+from datetime import datetime, timezone, UTC
 
 from app.domain.entities.mqtt_message import MqttMessage
 from app.domain.services.mqtt_message_service import MqttMessageService
 from app.domain.exceptions import RepositoryError
+from tests.conftest import SAMPLE_CARD_UUID, SAMPLE_CARD_UUID_2
 
 
 class TestMqttMessageService:
@@ -31,7 +32,7 @@ class TestMqttMessageService:
             topic="test/topic",
             message="test payload",
             timestamp=datetime.now(UTC),
-            id=123
+            id=SAMPLE_CARD_UUID
         )
         
         # Configure mock
@@ -51,7 +52,7 @@ class TestMqttMessageService:
             topic="test/topic",
             message="test payload",
             timestamp=datetime.now(UTC),
-            id=123
+            id=SAMPLE_CARD_UUID
         )
         
         # Configure mock to raise exception
@@ -71,13 +72,13 @@ class TestMqttMessageService:
                 topic="topic1",
                 message="payload1",
                 timestamp=datetime.now(UTC),
-                id=1
+                id=SAMPLE_CARD_UUID
             ),
             MqttMessage(
                 topic="topic2",
                 message="payload2",
                 timestamp=datetime.now(UTC),
-                id=2
+                id=SAMPLE_CARD_UUID_2
             )
         ]
         
@@ -111,7 +112,7 @@ class TestMqttMessageService:
             topic="test/topic",
             message="test payload",
             timestamp=datetime.now(UTC),
-            id=123
+            id=SAMPLE_CARD_UUID
         )
         
         # Configure mock
@@ -162,13 +163,13 @@ class TestMqttMessageService:
                 topic=topic,
                 message="payload 1",
                 timestamp=datetime.now(UTC),
-                id=1
+                id=SAMPLE_CARD_UUID
             ),
             MqttMessage(
                 topic=topic,
                 message="payload 2",
                 timestamp=datetime.now(UTC),
-                id=2
+                id=SAMPLE_CARD_UUID_2
             )
         ]
         
@@ -208,7 +209,7 @@ class TestMqttMessageService:
             topic=topic,
             message=message_content,
             timestamp=datetime.now(UTC),
-            id=123
+            id=SAMPLE_CARD_UUID
         )
         
         # Configure mocks
@@ -250,7 +251,7 @@ class TestMqttMessageService:
             topic=topic,
             message=message_content,
             timestamp=datetime.now(UTC),
-            id=123
+            id=SAMPLE_CARD_UUID
         )
         
         # Configure mocks

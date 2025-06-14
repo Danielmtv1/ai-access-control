@@ -1,18 +1,20 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status,Request
 from fastapi.security import OAuth2PasswordBearer
 from app.domain.entities.user import User
-from app.infrastructure.persistence.adapters.user_repository import SqlAlchemyUserRepository
 from app.domain.services.auth_service import AuthService
-from app.shared.database import AsyncSessionLocal
+from app.api.dependencies.repository_dependencies import get_user_repository
+from app.ports.user_repository_port import UserRepositoryPort
 from uuid import UUID
+
+from app.infrastructure.mqtt.adapters.asyncio_mqtt_adapter import AiomqttAdapter
+from app.domain.services.mqtt_message_service import MqttMessageService
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), user_repository: UserRepositoryPort = Depends(get_user_repository)) -> User:
     """Get current authenticated user from JWT token"""
     try:
         auth_service = AuthService()
-        user_repository = SqlAlchemyUserRepository(session_factory=AsyncSessionLocal)
         
         # Decode and validate token
         payload = auth_service.decode_token(token)
@@ -57,3 +59,11 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
             detail="Inactive user"
         )
     return current_user 
+
+def get_mqtt_adapter(request: Request) -> AiomqttAdapter:
+    """Get MQTT adapter from application state"""
+    return request.app.state.mqtt_adapter
+
+def get_mqtt_message_service(request: Request) -> MqttMessageService:
+    """Get MQTT message service from application state"""
+    return request.app.state.mqtt_message_service
