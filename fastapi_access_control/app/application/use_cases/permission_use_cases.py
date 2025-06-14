@@ -23,7 +23,16 @@ class CreatePermissionUseCase:
                  user_repository: UserRepositoryPort,
                  door_repository: DoorRepositoryPort,
                  card_repository: Optional[CardRepositoryPort] = None):
-        self.permission_repository = permission_repository
+        """
+                 Initializes the use case with repositories for permissions, users, doors, and optionally cards.
+                 
+                 Args:
+                     permission_repository: Repository interface for managing permissions.
+                     user_repository: Repository interface for accessing user data.
+                     door_repository: Repository interface for accessing door data.
+                     card_repository: Optional repository interface for accessing card data.
+                 """
+                 self.permission_repository = permission_repository
         self.user_repository = user_repository
         self.door_repository = door_repository
         self.card_repository = card_repository
@@ -37,7 +46,20 @@ class CreatePermissionUseCase:
                      valid_until: Optional[datetime] = None,
                      access_schedule: Optional[Dict[str, Any]] = None,
                      pin_required: bool = False) -> Permission:
-        """Create new permission"""
+        """
+                     Creates a new permission for a user to access a specific door.
+                     
+                     Validates the existence of the user, door, and optionally card. Prevents creation if an active permission already exists for the user-door pair. Sets the validity period and access schedule if provided, and marks the permission as active. Returns the created permission entity.
+                     
+                     Raises:
+                         UserNotFoundError: If the specified user does not exist.
+                         DoorNotFoundError: If the specified door does not exist.
+                         CardNotFoundError: If the specified card does not exist (when card_id is provided).
+                         EntityAlreadyExistsError: If an active permission already exists for the user and door.
+                     
+                     Returns:
+                         The newly created Permission entity.
+                     """
         logger.info(f"Creating permission for user {user_id} on door {door_id}")
         
         # Validate user exists
@@ -94,10 +116,19 @@ class GetPermissionUseCase:
     """Use case for retrieving permission by ID"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self, permission_id: UUID) -> Permission:
-        """Get permission by ID"""
+        """
+        Retrieves a permission by its unique identifier.
+        
+        Raises:
+            PermissionNotFoundError: If no permission exists with the given ID.
+        
+        Returns:
+            The permission entity corresponding to the specified ID.
+        """
         permission = await self.permission_repository.get_by_id(permission_id)
         if not permission:
             raise PermissionNotFoundError(f"Permission with ID {permission_id} not found")
@@ -108,6 +139,7 @@ class ListPermissionsUseCase:
     """Use case for listing permissions with filters and pagination"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self,
@@ -120,7 +152,23 @@ class ListPermissionsUseCase:
                      expired_only: Optional[bool] = None,
                      page: int = 1,
                      size: int = 50) -> Dict[str, Any]:
-        """List permissions with filters"""
+        """
+                     Retrieves a paginated list of permissions filtered by user, door, card, status, creator, and validity.
+                     
+                     Args:
+                         user_id: Filter by user UUID.
+                         door_id: Filter by door UUID.
+                         card_id: Filter by card UUID.
+                         status: Filter by permission status.
+                         created_by: Filter by creator UUID.
+                         valid_only: If True, include only currently valid permissions.
+                         expired_only: If True, include only expired permissions.
+                         page: Page number for pagination (1-based).
+                         size: Number of permissions per page.
+                     
+                     Returns:
+                         A dictionary containing the list of permissions, total count, current page, page size, and total number of pages.
+                     """
         logger.info(f"Listing permissions with filters: user_id={user_id}, door_id={door_id}")
         
         # Calculate offset
@@ -165,6 +213,7 @@ class UpdatePermissionUseCase:
     """Use case for updating permissions"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self,
@@ -174,7 +223,17 @@ class UpdatePermissionUseCase:
                      valid_until: Optional[datetime] = None,
                      access_schedule: Optional[Dict[str, Any]] = None,
                      pin_required: Optional[bool] = None) -> Permission:
-        """Update permission"""
+        """
+                     Updates fields of an existing permission identified by its UUID.
+                     
+                     Retrieves the specified permission and updates any provided fields, including status, validity period, access schedule, and PIN requirement. The updated permission is saved and returned.
+                     
+                     Raises:
+                         PermissionNotFoundError: If the permission with the given ID does not exist.
+                     
+                     Returns:
+                         The updated Permission entity.
+                     """
         logger.info(f"Updating permission {permission_id}")
         
         # Get existing permission
@@ -207,10 +266,15 @@ class DeletePermissionUseCase:
     """Use case for deleting permissions"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self, permission_id: UUID) -> bool:
-        """Delete permission"""
+        """
+        Deletes a permission by its unique identifier.
+        
+        Checks for the existence of the permission before deletion. Returns True if the permission was successfully deleted, or False otherwise. Raises PermissionNotFoundError if the permission does not exist.
+        """
         logger.info(f"Deleting permission {permission_id}")
         
         # Check if permission exists
@@ -231,10 +295,21 @@ class RevokePermissionUseCase:
     """Use case for revoking permissions (soft delete by setting status)"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self, permission_id: UUID) -> Permission:
-        """Revoke permission by setting status to suspended"""
+        """
+        Revokes a permission by setting its status to "suspended".
+        
+        Retrieves the permission by its unique ID, updates its status to "suspended" and refreshes the update timestamp. Persists the changes and returns the updated permission entity.
+        
+        Raises:
+            PermissionNotFoundError: If the permission with the specified ID does not exist.
+        
+        Returns:
+            The updated Permission entity with status set to "suspended".
+        """
         logger.info(f"Revoking permission {permission_id}")
         
         # Get existing permission
@@ -256,10 +331,19 @@ class GetUserPermissionsUseCase:
     """Use case for getting all permissions for a specific user"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self, user_id: UUID) -> List[Permission]:
-        """Get all permissions for a user"""
+        """
+        Retrieves all permissions associated with a specific user.
+        
+        Args:
+            user_id: The UUID of the user whose permissions are to be retrieved.
+        
+        Returns:
+            A list of Permission objects linked to the specified user.
+        """
         logger.info(f"Getting permissions for user {user_id}")
         
         permissions = await self.permission_repository.get_by_user_id(user_id)
@@ -271,10 +355,19 @@ class GetDoorPermissionsUseCase:
     """Use case for getting all permissions for a specific door"""
     
     def __init__(self, permission_repository: PermissionRepositoryPort):
+        Initializes the use case with a permission repository for data access.
         self.permission_repository = permission_repository
     
     async def execute(self, door_id: UUID) -> List[Permission]:
-        """Get all permissions for a door"""
+        """
+        Retrieves all permissions associated with a specific door.
+        
+        Args:
+            door_id: The UUID of the door for which to fetch permissions.
+        
+        Returns:
+            A list of Permission objects linked to the specified door.
+        """
         logger.info(f"Getting permissions for door {door_id}")
         
         permissions = await self.permission_repository.get_by_door_id(door_id)
@@ -290,7 +383,16 @@ class BulkCreatePermissionsUseCase:
                  user_repository: UserRepositoryPort,
                  door_repository: DoorRepositoryPort,
                  card_repository: Optional[CardRepositoryPort] = None):
-        self.permission_repository = permission_repository
+        """
+                 Initializes the use case with repositories for permissions, users, doors, and optionally cards.
+                 
+                 Args:
+                     permission_repository: Repository interface for managing permissions.
+                     user_repository: Repository interface for accessing user data.
+                     door_repository: Repository interface for accessing door data.
+                     card_repository: Optional repository interface for accessing card data.
+                 """
+                 self.permission_repository = permission_repository
         self.user_repository = user_repository
         self.door_repository = door_repository
         self.card_repository = card_repository
@@ -298,7 +400,22 @@ class BulkCreatePermissionsUseCase:
     async def execute(self, 
                      permissions_data: List[Dict[str, Any]], 
                      created_by: UUID) -> Dict[str, Any]:
-        """Create multiple permissions"""
+        """
+                     Creates multiple permissions in bulk from a list of permission data dictionaries.
+                     
+                     Attempts to create each permission using the provided data. Successfully created permissions are collected, while failures are recorded with their index, input data, and error details. Returns a summary containing lists of created permissions, failed attempts, and counts for each outcome.
+                     
+                     Args:
+                         permissions_data: A list of dictionaries, each containing the data required to create a permission.
+                     
+                     Returns:
+                         A dictionary with keys:
+                             - "created": List of successfully created Permission objects.
+                             - "failed": List of failure details, each including the index, input data, and error message.
+                             - "total_requested": Total number of permission creation attempts.
+                             - "total_created": Number of successfully created permissions.
+                             - "total_failed": Number of failed permission creations.
+                     """
         logger.info(f"Creating {len(permissions_data)} permissions in bulk")
         
         created = []

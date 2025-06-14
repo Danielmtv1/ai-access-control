@@ -50,6 +50,12 @@ class CreateUserRequest(BaseModel):
     @field_validator('roles')
     @classmethod
     def validate_roles(cls, v):
+        """
+        Validates and normalizes the roles list for a user.
+        
+        If the input list is empty or None, returns a list containing only the USER role.
+        Removes duplicate roles from the list if present.
+        """
         if not v:
             return [RoleEnum.USER]
         return list(set(v))  # Remove duplicates
@@ -57,6 +63,11 @@ class CreateUserRequest(BaseModel):
     @field_validator('password')
     @classmethod
     def validate_password(cls, v):
+        """
+        Validates that a password meets minimum complexity requirements.
+        
+        Ensures the password is at least 8 characters long and contains at least one uppercase letter, one lowercase letter, and one digit. Raises a ValueError if any requirement is not met.
+        """
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
         if not any(c.isupper() for c in v):
@@ -90,6 +101,12 @@ class UpdateUserRequest(BaseModel):
     @field_validator('roles')
     @classmethod
     def validate_roles(cls, v):
+        """
+        Removes duplicate roles from the provided list.
+        
+        Returns:
+            A list of unique roles, or None if no roles are provided.
+        """
         if v is not None:
             return list(set(v))  # Remove duplicates
         return v
@@ -111,6 +128,12 @@ class ChangePasswordRequest(BaseModel):
     @field_validator('new_password')
     @classmethod
     def validate_new_password(cls, v):
+        """
+        Validates that a new password meets minimum complexity requirements.
+        
+        Raises:
+            ValueError: If the password is shorter than 8 characters, or does not contain at least one uppercase letter, one lowercase letter, and one digit.
+        """
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
         if not any(c.isupper() for c in v):
@@ -169,7 +192,15 @@ class UserResponse(BaseModel):
 
     @classmethod
     def from_entity(cls, user) -> 'UserResponse':
-        """Convert User entity to UserResponse"""
+        """
+        Creates a UserResponse instance from a user entity object.
+        
+        Args:
+            user: An object representing a user entity with attributes matching UserResponse fields.
+        
+        Returns:
+            A UserResponse populated with data extracted from the user entity.
+        """
         return cls(
             id=user.id,
             email=user.email,

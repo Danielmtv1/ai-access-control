@@ -11,13 +11,17 @@ class TestDoorsAPI:
     
     @pytest.fixture
     def client(self):
-        """HTTP client for testing."""
+        """
+        Provides a FastAPI TestClient instance for making HTTP requests in integration tests.
+        """
         from app.main import app
         return TestClient(app)
     
     @pytest.fixture
     def mock_admin_user(self):
-        """Mock admin user for testing."""
+        """
+        Creates and returns a mock admin user with active status for use in authentication overrides during tests.
+        """
         return User(
             id=SAMPLE_ADMIN_UUID,
             email="admin@test.com",
@@ -30,16 +34,28 @@ class TestDoorsAPI:
         )
     
     def setup_auth_override(self, client, user):
-        """Helper to setup authentication override."""
+        """
+        Overrides the authentication dependency to simulate an authenticated user in tests.
+        
+        Sets the FastAPI dependency for the current active user to return the specified user object, allowing test requests to bypass real authentication.
+        """
         from app.api.dependencies.auth_dependencies import get_current_active_user
         client.app.dependency_overrides[get_current_active_user] = lambda: user
         
     def cleanup_overrides(self, client):
-        """Helper to cleanup dependency overrides."""
+        """
+        Removes all dependency overrides from the FastAPI test client.
+        
+        Call this method after tests to restore the application's original dependency configuration.
+        """
         client.app.dependency_overrides.clear()
     
     def test_create_door_success(self, client, mock_admin_user):
-        """Test successful door creation"""
+        """
+        Tests that a door can be successfully created via the API when valid data and authentication are provided.
+        
+        Simulates a POST request to the door creation endpoint with valid door data, using dependency overrides to mock authentication and repository behavior. Asserts that the response status is 201 and the returned door fields match the input.
+        """
         # Create mocks
         mock_door_repository = AsyncMock()
         
@@ -112,7 +128,11 @@ class TestDoorsAPI:
             client.app.dependency_overrides.clear()
 
     def test_create_door_without_schedule(self, client, mock_admin_user):
-        """Test door creation without default schedule"""
+        """
+        Tests that a door can be created without specifying a default access schedule.
+        
+        Verifies that the API successfully creates a door when no default schedule is provided, and that the response contains the expected fields with `default_schedule` set to `None`.
+        """
         # Create mocks
         mock_door_repository = AsyncMock()
         
@@ -169,7 +189,9 @@ class TestDoorsAPI:
             client.app.dependency_overrides.clear()
 
     def test_create_door_unauthorized(self, client):
-        """Test door creation without authentication"""
+        """
+        Tests that creating a door without authentication returns a 401 Unauthorized error.
+        """
         door_data = {
             "name": "Test Door",
             "location": "Building A",
@@ -183,7 +205,11 @@ class TestDoorsAPI:
         assert "Not authenticated" in response.json()["detail"]
 
     def test_create_door_validation_error(self, client, mock_admin_user):
-        """Test door creation with invalid data"""
+        """
+        Tests that creating a door with invalid input data returns a 422 Unprocessable Entity response.
+        
+        This test verifies that the API correctly enforces validation rules for required fields and allowed values when attempting to create a door with missing or invalid attributes.
+        """
         # Setup authentication
         self.setup_auth_override(client, mock_admin_user)
         
@@ -204,7 +230,9 @@ class TestDoorsAPI:
             self.cleanup_overrides(client)
 
     def test_get_door_success(self, client, mock_admin_user):
-        """Test successful door retrieval"""
+        """
+        Tests retrieval of a door by ID and verifies that the API returns the correct door details with a 200 OK response.
+        """
         # Create mocks
         mock_door_repository = AsyncMock()
         
@@ -253,7 +281,9 @@ class TestDoorsAPI:
             client.app.dependency_overrides.clear()
 
     def test_get_door_not_found(self, client, mock_admin_user):
-        """Test door retrieval when door doesn't exist"""
+        """
+        Tests that retrieving a non-existent door by ID returns a 404 Not Found response.
+        """
         # Create mocks
         mock_door_repository = AsyncMock()
         
@@ -277,7 +307,11 @@ class TestDoorsAPI:
             client.app.dependency_overrides.clear()
 
     def test_get_door_by_name_success(self, client, mock_admin_user):
-        """Test door retrieval by name"""
+        """
+        Tests successful retrieval of a door by its name via the API.
+        
+        Simulates an authenticated admin user and mocks the door repository to return a specific door when queried by name. Asserts that the API responds with HTTP 200 and the correct door data.
+        """
         # Create mocks
         mock_door_repository = AsyncMock()
         
@@ -320,7 +354,11 @@ class TestDoorsAPI:
             client.app.dependency_overrides.clear()
 
     def test_get_doors_by_location_success(self, client, mock_admin_user):
-        """Test door retrieval by location"""
+        """
+        Tests successful retrieval of doors by location via the API.
+        
+        Simulates an authenticated admin user and mocks the door repository to return a list of doors for a specified location. Sends a GET request to the doors-by-location endpoint and verifies that the response contains the expected doors with the correct location.
+        """
         # Create mocks
         mock_door_repository = AsyncMock()
         
@@ -366,7 +404,11 @@ class TestDoorsAPI:
             client.app.dependency_overrides.clear()
 
     def test_get_doors_by_security_level_success(self, client, mock_admin_user):
-        """Test door retrieval by security level"""
+        """
+        Tests retrieval of doors filtered by high security level.
+        
+        Simulates authentication and mocks the use case to return a list of doors with high security level. Sends a GET request to the security-level endpoint and verifies the response contains the expected doors.
+        """
         with patch('app.api.v1.doors.GetDoorsBySecurityLevelUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -410,7 +452,11 @@ class TestDoorsAPI:
                 self.cleanup_overrides(client)
 
     def test_list_doors_success(self, client, mock_admin_user):
-        """Test listing all doors"""
+        """
+        Tests that the API endpoint for listing all doors returns the expected list of doors.
+        
+        Verifies that a GET request to `/api/v1/doors/` returns a 200 response with the correct number of door entries when the use case returns multiple doors.
+        """
         with patch('app.api.v1.doors.ListDoorsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -469,7 +515,11 @@ class TestDoorsAPI:
                 self.cleanup_overrides(client)
 
     def test_list_doors_active_only(self, client, mock_admin_user):
-        """Test listing only active doors"""
+        """
+        Tests that the API endpoint for listing doors returns only active doors when the 'active_only' query parameter is set to true.
+        
+        Simulates authentication and mocks the use case to return a list containing only active doors. Verifies that the response contains only doors with status "active".
+        """
         with patch('app.api.v1.doors.GetActiveDoorsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -513,7 +563,9 @@ class TestDoorsAPI:
                 self.cleanup_overrides(client)
 
     def test_update_door_success(self, client, mock_admin_user):
-        """Test successful door update"""
+        """
+        Tests that updating a door with valid data returns a successful response and the updated door information.
+        """
         with patch('app.api.v1.doors.UpdateDoorUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -564,7 +616,11 @@ class TestDoorsAPI:
                 self.cleanup_overrides(client)
 
     def test_set_door_status_success(self, client, mock_admin_user):
-        """Test setting door status"""
+        """
+        Tests that the door status can be successfully updated via the API.
+        
+        Simulates setting a door's status using a mocked use case and verifies that the API returns the updated status in the response.
+        """
         with patch('app.api.v1.doors.SetDoorStatusUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -607,7 +663,11 @@ class TestDoorsAPI:
                 self.cleanup_overrides(client)
 
     def test_delete_door_success(self, client, mock_admin_user):
-        """Test successful door deletion"""
+        """
+        Tests that deleting a door via the API returns a 204 status code when successful.
+        
+        Simulates a successful door deletion by mocking the use case and overriding authentication dependencies.
+        """
         with patch('app.api.v1.doors.DeleteDoorUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -627,7 +687,9 @@ class TestDoorsAPI:
                 self.cleanup_overrides(client)
 
     def test_delete_door_not_found(self, client, mock_admin_user):
-        """Test door deletion when door doesn't exist"""
+        """
+        Tests that attempting to delete a non-existent door returns a 404 Not Found response.
+        """
         with patch('app.api.v1.doors.DeleteDoorUseCase') as mock_use_case_class:
             
             # Setup authentication

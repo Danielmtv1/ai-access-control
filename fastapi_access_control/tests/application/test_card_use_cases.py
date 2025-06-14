@@ -24,6 +24,12 @@ class TestCreateCardUseCase:
     
     @pytest.fixture
     def sample_user(self):
+        """
+        Creates and returns a sample active user entity for testing purposes.
+        
+        Returns:
+            User: A user instance with predefined attributes and active status.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         return User(
             id=SAMPLE_CARD_UUID,
@@ -42,7 +48,11 @@ class TestCreateCardUseCase:
     
     @pytest.mark.asyncio
     async def test_create_card_success(self, create_card_use_case, mock_card_repository, mock_user_repository, sample_user):
-        """Test successful card creation"""
+        """
+        Tests that a card is successfully created when the user exists and the card ID is unique.
+        
+        Verifies that the created card has the expected attributes and that the appropriate repository methods are called.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         valid_until = now + timedelta(days=365)
         
@@ -86,7 +96,9 @@ class TestCreateCardUseCase:
     
     @pytest.mark.asyncio
     async def test_create_card_user_not_found(self, create_card_use_case, mock_card_repository, mock_user_repository):
-        """Test card creation fails when user doesn't exist"""
+        """
+        Tests that creating a card fails with a UserNotFoundError when the specified user does not exist.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Mock user doesn't exist
@@ -107,7 +119,11 @@ class TestCreateCardUseCase:
     
     @pytest.mark.asyncio
     async def test_create_card_duplicate_card_id(self, create_card_use_case, mock_card_repository, mock_user_repository, sample_user):
-        """Test card creation fails when card_id already exists"""
+        """
+        Tests that creating a card fails with EntityAlreadyExistsError when the card_id already exists.
+        
+        Verifies that the use case raises the correct exception and does not attempt to create a duplicate card when a card with the specified card_id is already present in the repository.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         
         # Mock user exists
@@ -154,7 +170,11 @@ class TestGetCardUseCase:
     
     @pytest.mark.asyncio
     async def test_get_card_success(self, get_card_use_case, mock_card_repository):
-        """Test successful card retrieval"""
+        """
+        Tests that a card can be successfully retrieved by its identifier.
+        
+        Verifies that the use case returns the expected card entity and that the repository's retrieval method is called with the correct identifier.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         expected_card = Card(
             id=SAMPLE_CARD_UUID,
@@ -177,7 +197,11 @@ class TestGetCardUseCase:
     
     @pytest.mark.asyncio
     async def test_get_card_not_found(self, get_card_use_case, mock_card_repository):
-        """Test card retrieval when card doesn't exist"""
+        """
+        Tests that attempting to retrieve a non-existent card raises CardNotFoundError.
+        
+        Verifies that the use case raises the expected exception and that the repository's get_by_id method is called with the correct identifier.
+        """
         mock_card_repository.get_by_id.return_value = None
         
         with pytest.raises(CardNotFoundError, match="Card with identifier '999' not found"):
@@ -198,7 +222,11 @@ class TestUpdateCardUseCase:
     
     @pytest.mark.asyncio
     async def test_update_card_success(self, update_card_use_case, mock_card_repository):
-        """Test successful card update"""
+        """
+        Tests that updating a card's type, status, and validity period succeeds and returns the updated card entity.
+        
+        Verifies that the card repository's retrieval and update methods are called with the correct parameters and that the returned card reflects the requested changes.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         original_card = Card(
             id=SAMPLE_CARD_UUID,
@@ -244,7 +272,9 @@ class TestUpdateCardUseCase:
     
     @pytest.mark.asyncio
     async def test_update_card_not_found(self, update_card_use_case, mock_card_repository):
-        """Test card update when card doesn't exist"""
+        """
+        Tests that updating a non-existent card raises CardNotFoundError and does not call the update method.
+        """
         mock_card_repository.get_by_id.return_value = None
         
         with pytest.raises(CardNotFoundError, match="Card with identifier '999' not found"):
@@ -266,7 +296,11 @@ class TestSuspendCardUseCase:
     
     @pytest.mark.asyncio
     async def test_suspend_card_success(self, suspend_card_use_case, mock_card_repository):
-        """Test successful card suspension"""
+        """
+        Tests that suspending a card updates its status to SUSPENDED and modifies the updated_at timestamp.
+        
+        Verifies that the card repository's get_by_id and update methods are called with the correct arguments and that the resulting card reflects the suspended status.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         original_card = Card(
             id=SAMPLE_CARD_UUID,
@@ -317,7 +351,11 @@ class TestListCardsUseCase:
     
     @pytest.mark.asyncio
     async def test_list_cards_success(self, list_cards_use_case, mock_card_repository):
-        """Test successful card listing"""
+        """
+        Tests that listing cards returns the expected list of card entities.
+        
+        Verifies that the use case retrieves the correct cards from the repository and that the returned list matches the expected card IDs and count.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         cards = [
             Card(
@@ -368,7 +406,11 @@ class TestDeleteCardUseCase:
     
     @pytest.mark.asyncio
     async def test_delete_card_success(self, delete_card_use_case, mock_card_repository):
-        """Test successful card deletion"""
+        """
+        Tests that a card is successfully deleted when it exists.
+        
+        Verifies that the delete operation returns True and that the repository methods for retrieval and deletion are called with the correct card identifier.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         existing_card = Card(
             id=SAMPLE_CARD_UUID,
@@ -394,7 +436,9 @@ class TestDeleteCardUseCase:
     
     @pytest.mark.asyncio
     async def test_delete_card_not_found(self, delete_card_use_case, mock_card_repository):
-        """Test card deletion when card doesn't exist"""
+        """
+        Tests that attempting to delete a non-existent card raises CardNotFoundError and does not call the delete method on the repository.
+        """
         mock_card_repository.get_by_id.return_value = None
         
         with pytest.raises(CardNotFoundError, match="Card with identifier .* not found"):

@@ -6,12 +6,21 @@ class TestPermissionsAPIBasic:
     
     @pytest.fixture
     def client(self):
-        """HTTP client for testing."""
+        """
+        Provides a test HTTP client for the FastAPI application.
+        
+        Returns:
+            A TestClient instance for making HTTP requests to the app during tests.
+        """
         from app.main import app
         return TestClient(app)
 
     def test_permissions_endpoints_require_auth(self, client):
-        """Test that permissions endpoints require authentication"""
+        """
+        Verifies that all Permissions API endpoints return HTTP 401 Unauthorized when accessed without authentication.
+        
+        This test ensures that unauthenticated requests to the main Permissions API routes are properly rejected, enforcing authentication requirements.
+        """
         # Test main endpoints return 401 without auth
         assert client.post("/api/v1/permissions/", json={}).status_code == 401
         assert client.get("/api/v1/permissions/").status_code == 401
@@ -24,7 +33,11 @@ class TestPermissionsAPIBasic:
         assert client.post("/api/v1/permissions/bulk", json={}).status_code == 401
 
     def test_permissions_endpoints_exist(self, client):
-        """Test that permissions endpoints exist in OpenAPI spec"""
+        """
+        Verifies that all main Permissions API endpoints are present in the OpenAPI specification.
+        
+        Sends a request to the OpenAPI JSON endpoint and asserts the existence of key permissions-related paths to ensure the API is properly documented.
+        """
         response = client.get("/openapi.json")
         assert response.status_code == 200
         
@@ -40,7 +53,11 @@ class TestPermissionsAPIBasic:
         assert "/api/v1/permissions/bulk" in paths
 
     def test_permissions_api_tags_in_openapi(self, client):
-        """Test that permissions API is properly tagged in OpenAPI"""
+        """
+        Verifies that the Permissions API endpoints are tagged as "Permissions" in the OpenAPI specification.
+        
+        Ensures the OpenAPI JSON includes a tag named "Permissions" to categorize the Permissions API.
+        """
         response = client.get("/openapi.json")
         assert response.status_code == 200
         

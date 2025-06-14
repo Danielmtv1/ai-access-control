@@ -47,7 +47,11 @@ class TestDoor:
     """Test cases for Door domain entity"""
     
     def test_door_creation(self):
-        """Test Door entity creation with valid data"""
+        """
+        Verifies that a Door entity is correctly created with valid attributes and initial state.
+        
+        Asserts that all provided attributes are set as expected and that last_access and locked_until are initialized to None.
+        """
         now = datetime.now()
         schedule = AccessSchedule(
             days_of_week=[0, 1, 2, 3, 4],
@@ -88,7 +92,9 @@ class TestDoor:
         assert door.locked_until is None
     
     def test_door_is_active_with_active_status(self):
-        """Test door is_active returns True for ACTIVE status"""
+        """
+        Tests that the is_active() method returns True when the door status is ACTIVE.
+        """
         now = datetime.now()
         
         door = Door(
@@ -105,7 +111,11 @@ class TestDoor:
         assert door.is_active() is True
     
     def test_door_is_active_with_inactive_status(self):
-        """Test door is_active returns False for non-ACTIVE status"""
+        """
+        Verifies that a door with a non-ACTIVE status is not considered active.
+        
+        Asserts that the `is_active()` method returns `False` when the door's status is set to a value other than `ACTIVE`.
+        """
         now = datetime.now()
         
         door = Door(
@@ -122,7 +132,9 @@ class TestDoor:
         assert door.is_active() is False
     
     def test_door_is_accessible_when_active_and_no_schedule(self):
-        """Test door is_accessible returns True when active and no schedule"""
+        """
+        Tests that a door with active status and no access schedule is considered accessible.
+        """
         now = datetime.now()
         
         door = Door(
@@ -140,7 +152,11 @@ class TestDoor:
         assert door.is_accessible() is True
     
     def test_door_is_accessible_when_inactive(self):
-        """Test door is_accessible returns False when inactive"""
+        """
+        Tests that a door marked as inactive is not accessible.
+        
+        Verifies that the `is_accessible()` method returns `False` when the door's status is set to `INACTIVE`.
+        """
         now = datetime.now()
         
         door = Door(
@@ -157,7 +173,9 @@ class TestDoor:
         assert door.is_accessible() is False
     
     def test_door_is_accessible_when_locked_out(self):
-        """Test door is_accessible returns False when locked out"""
+        """
+        Verifies that a door's is_accessible() method returns False when the door is currently locked out.
+        """
         now = datetime.now()
         
         door = Door(
@@ -175,7 +193,9 @@ class TestDoor:
         assert door.is_accessible() is False
     
     def test_door_is_locked_out_with_future_locked_until(self):
-        """Test is_locked_out returns True when locked_until is in the future"""
+        """
+        Tests that is_locked_out() returns True when the door's locked_until is set to a future time.
+        """
         now = datetime.now()
         
         door = Door(
@@ -193,7 +213,9 @@ class TestDoor:
         assert door.is_locked_out() is True
     
     def test_door_is_locked_out_with_past_locked_until(self):
-        """Test is_locked_out returns False when locked_until is in the past"""
+        """
+        Verifies that is_locked_out() returns False when the door's locked_until timestamp is in the past.
+        """
         now = datetime.now()
         
         door = Door(
@@ -211,7 +233,9 @@ class TestDoor:
         assert door.is_locked_out() is False
     
     def test_door_is_high_security(self):
-        """Test is_high_security returns True for HIGH and CRITICAL levels"""
+        """
+        Tests that the is_high_security() method returns True for doors with HIGH or CRITICAL security levels and False for MEDIUM security level.
+        """
         now = datetime.now()
         
         high_door = Door(
@@ -252,7 +276,9 @@ class TestDoor:
         assert medium_door.is_high_security() is False
     
     def test_door_requires_master_access(self):
-        """Test requires_master_access returns True only for CRITICAL level"""
+        """
+        Verifies that requires_master_access() returns True only for doors with CRITICAL security level.
+        """
         now = datetime.now()
         
         critical_door = Door(
@@ -281,7 +307,11 @@ class TestDoor:
         assert high_door.requires_master_access() is False
     
     def test_door_record_successful_access(self):
-        """Test record_successful_access updates door state"""
+        """
+        Verifies that recording a successful access updates the door's state appropriately.
+        
+        Ensures that `record_successful_access` sets `last_access` to a new timestamp, resets `failed_attempts` to zero, clears `locked_until`, and updates `updated_at` to a later value.
+        """
         now = datetime.now()
         
         door = Door(
@@ -309,7 +339,9 @@ class TestDoor:
         assert door.updated_at > original_updated_at
     
     def test_door_record_failed_attempt(self):
-        """Test record_failed_attempt increments failed attempts"""
+        """
+        Tests that calling record_failed_attempt() on a Door increments failed_attempts by one, does not set locked_until if the maximum attempts have not been reached, and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         door = Door(
@@ -337,7 +369,11 @@ class TestDoor:
         assert door.updated_at > original_updated_at
     
     def test_door_record_failed_attempt_triggers_lockout(self):
-        """Test record_failed_attempt triggers lockout when max attempts reached"""
+        """
+        Verifies that a failed access attempt triggers a lockout when the maximum number of attempts is reached.
+        
+        This test ensures that after reaching the maximum allowed failed attempts, the door's `locked_until` attribute is set to a future time, indicating a lockout period.
+        """
         now = datetime.now()
         
         door = Door(
@@ -361,7 +397,9 @@ class TestDoor:
         assert door.locked_until > now
     
     def test_door_reset_failed_attempts(self):
-        """Test reset_failed_attempts clears failed attempts and lockout"""
+        """
+        Verifies that calling reset_failed_attempts() on a Door entity clears failed attempts, removes lockout, and updates the timestamp.
+        """
         now = datetime.now()
         
         door = Door(
@@ -388,7 +426,9 @@ class TestDoor:
         assert door.updated_at > original_updated_at
     
     def test_door_set_emergency_open(self):
-        """Test set_emergency_open changes status to EMERGENCY_OPEN"""
+        """
+        Verifies that set_emergency_open() sets the door status to EMERGENCY_OPEN and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         door = Door(
@@ -412,7 +452,9 @@ class TestDoor:
         assert door.updated_at > original_updated_at
     
     def test_door_set_emergency_locked(self):
-        """Test set_emergency_locked changes status to EMERGENCY_LOCKED"""
+        """
+        Tests that set_emergency_locked() sets the door status to EMERGENCY_LOCKED and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         door = Door(
@@ -436,7 +478,9 @@ class TestDoor:
         assert door.updated_at > original_updated_at
     
     def test_door_set_maintenance_mode(self):
-        """Test set_maintenance_mode changes status to MAINTENANCE"""
+        """
+        Verifies that set_maintenance_mode sets the door status to MAINTENANCE and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         door = Door(

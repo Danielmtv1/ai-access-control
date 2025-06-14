@@ -21,7 +21,17 @@ from app.domain.exceptions import (
 )
 
 def map_domain_error_to_http(error: Exception) -> HTTPException:
-    """Map domain errors to HTTP exceptions"""
+    """
+    Converts a domain-specific exception into an appropriate FastAPI HTTPException.
+    
+    Maps known authentication, authorization, entity, and validation errors to their corresponding HTTP status codes and messages. Returns a generic 500 Internal Server Error for unrecognized exceptions.
+    
+    Args:
+        error: The domain exception to convert.
+    
+    Returns:
+        An HTTPException with the appropriate status code and detail message.
+    """
     if isinstance(error, InvalidCredentialsError):
         return HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

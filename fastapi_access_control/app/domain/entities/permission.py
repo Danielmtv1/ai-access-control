@@ -41,17 +41,34 @@ class Permission:
         return True
     
     def is_expired(self) -> bool:
-        """Business logic: Check if permission is expired"""
+        """
+        Determines whether the permission has expired.
+        
+        Returns:
+            True if the current time is after the permission's valid_until timestamp; False if no expiration is set or the permission is still valid.
+        """
         if not self.valid_until:
             return False
         return datetime.now() > self.valid_until
     
     def can_access_door(self, door_id: UUID) -> bool:
-        """Business logic: Check if this permission allows access to specific door"""
+        """
+        Determines if the permission grants access to the specified door.
+        
+        Args:
+            door_id: The UUID of the door to check access for.
+        
+        Returns:
+            True if the permission is active and associated with the given door ID; otherwise, False.
+        """
         return self.is_active() and self.door_id == door_id
     
     def can_access_with_card(self, card_id: UUID) -> bool:
-        """Business logic: Check if this permission allows access with specific card"""
+        """
+        Determines if access is permitted with the specified card.
+        
+        Returns True if the permission is active and either not restricted to a specific card or the provided card ID matches the assigned card.
+        """
         if not self.is_active():
             return False
             

@@ -19,6 +19,11 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
         self.session_factory = session_factory
     
     async def create(self, card: Card) -> Card:
+        """
+        Creates a new card in the database and returns the saved card entity.
+        
+        If a database error occurs, the transaction is rolled back and a RepositoryError is raised.
+        """
         async with self.session_factory() as db:
             try:
                 card_model = CardMapper.to_model(card)
@@ -36,6 +41,18 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 raise RepositoryError(f"Error creating card: {e}") from e
     
     async def get_by_id(self, card_id: UUID) -> Optional[Card]:
+        """
+        Retrieves a card by its UUID.
+        
+        Args:
+        	card_id: The UUID of the card to retrieve.
+        
+        Returns:
+        	The corresponding Card object if found, otherwise None.
+        
+        Raises:
+        	RepositoryError: If a database error occurs during retrieval.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -49,6 +66,18 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 raise RepositoryError(f"Error getting card: {e}") from e
     
     async def get_by_card_id(self, card_id: str) -> Optional[Card]:
+        """
+        Retrieves a card by its string card identifier.
+        
+        Args:
+            card_id: The string identifier of the card.
+        
+        Returns:
+            The corresponding Card object if found, otherwise None.
+        
+        Raises:
+            RepositoryError: If a database error occurs during retrieval.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -62,6 +91,18 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 raise RepositoryError(f"Error getting card: {e}") from e
     
     async def get_by_user_id(self, user_id: UUID) -> List[Card]:
+        """
+        Retrieves all cards associated with a specific user.
+        
+        Args:
+            user_id: The UUID of the user whose cards are to be retrieved.
+        
+        Returns:
+            A list of Card domain objects belonging to the specified user.
+        
+        Raises:
+            RepositoryError: If a database error occurs during retrieval.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -75,6 +116,15 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 raise RepositoryError(f"Error getting cards: {e}") from e
     
     async def update(self, card: Card) -> Card:
+        """
+        Updates an existing card in the database with new values from the provided domain Card.
+        
+        Raises:
+            RepositoryError: If the card does not exist or a database error occurs.
+        
+        Returns:
+            The updated Card entity.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(
@@ -96,6 +146,18 @@ class SqlAlchemyCardRepository(CardRepositoryPort):
                 raise RepositoryError(f"Error updating card: {e}") from e
     
     async def delete(self, card_id: UUID) -> bool:
+        """
+        Deletes a card from the database by its UUID.
+        
+        Args:
+            card_id: The UUID of the card to delete.
+        
+        Returns:
+            True if the card was found and deleted, False if no card with the given UUID exists.
+        
+        Raises:
+            RepositoryError: If a database error occurs during deletion.
+        """
         async with self.session_factory() as db:
             try:
                 result = await db.execute(

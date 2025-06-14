@@ -26,7 +26,17 @@ class AuthService:
         )
     
     def generate_access_token(self, user: User) -> str:
-        """Generate JWT access token"""
+        """
+        Generates a JWT access token for the specified user.
+        
+        The token includes the user's ID, email, full name, roles, issued-at time, expiration time based on configuration, and a type indicator set to "access". The token is signed using the configured secret key and algorithm.
+        
+        Args:
+            user: The user for whom the access token is generated.
+        
+        Returns:
+            A JWT access token as a string.
+        """
         now = datetime.now(timezone.utc)
         payload = {
             "sub": str(user.id),
@@ -45,7 +55,17 @@ class AuthService:
         )
     
     def generate_refresh_token(self, user: User) -> str:
-        """Generate JWT refresh token"""
+        """
+        Generates a JWT refresh token for the specified user.
+        
+        The token includes the user's ID, issued-at time, expiration time based on configured days, and a type indicator set to "refresh". The token is signed using the configured secret key and algorithm.
+        
+        Args:
+            user: The user for whom the refresh token is generated.
+        
+        Returns:
+            A JWT refresh token as a string.
+        """
         now = datetime.now(timezone.utc)
         payload = {
             "sub": str(user.id),

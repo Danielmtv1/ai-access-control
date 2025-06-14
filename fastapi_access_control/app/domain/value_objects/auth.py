@@ -23,7 +23,22 @@ class Password(BaseModel):
     @field_validator('value')
     @classmethod
     def validate_password(cls, v: str) -> str:
-        """Validate password strength"""
+        """
+        Validates password strength according to configurable application settings.
+        
+        Checks that the password meets minimum length and character composition requirements
+        (uppercase, lowercase, digits, special characters) as specified in the current settings.
+        Raises a ValueError if any requirement is not satisfied.
+        
+        Args:
+            v: The password string to validate.
+        
+        Returns:
+            The validated password string.
+        
+        Raises:
+            ValueError: If the password does not meet the configured strength requirements.
+        """
         settings = get_settings()
         
         if len(v) < settings.PASSWORD_MIN_LENGTH:
@@ -84,7 +99,15 @@ class TokenPair(BaseModel):
     @field_validator('expires_in')
     @classmethod
     def validate_expires_in(cls, v: int) -> int:
-        """Validate expiration time"""
+        """
+        Validates that the token expiration time is within the configured minimum and maximum bounds.
+        
+        Raises:
+            ValueError: If the expiration time is less than the minimum or greater than the maximum allowed.
+            
+        Returns:
+            The validated expiration time in seconds.
+        """
         settings = get_settings()
         if v < settings.TOKEN_MIN_EXPIRE_SECONDS:
             raise ValueError(f"Token expiration time must be at least {settings.TOKEN_MIN_EXPIRE_SECONDS} seconds")

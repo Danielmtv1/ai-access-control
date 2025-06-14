@@ -20,7 +20,13 @@ class MqttServiceFactory:
     
     @staticmethod
     def create_mqtt_config() -> MqttConfig:
-        """Create MQTT configuration from application settings."""
+        """
+        Creates an MqttConfig object using application settings.
+        
+        If a client ID is not specified in the settings, a deterministic client ID is generated for connection tracking.
+        Returns:
+            An MqttConfig instance populated with host, port, credentials, TLS usage, keepalive, clean session flag, client ID, maximum queued messages, and QoS.
+        """
         settings = get_settings()
         
         # Generate a deterministic client ID for better connection tracking
@@ -43,7 +49,13 @@ class MqttServiceFactory:
     
     @staticmethod
     def create_mqtt_adapter(message_handler: Callable[[str, str], None]) -> AiomqttAdapter:
-        """Create configured MQTT adapter with resilience patterns."""
+        """
+        Creates an AiomqttAdapter instance configured with application MQTT settings.
+        
+        The adapter is initialized with the provided message handler and is set up using
+        the generated MQTT configuration, including connection details and client ID.
+        Returns the configured AiomqttAdapter.
+        """
         config = MqttServiceFactory.create_mqtt_config()
         
         logger.info(
@@ -58,7 +70,15 @@ class MqttServiceFactory:
     
     @staticmethod
     def create_device_communication_service(mqtt_adapter: AiomqttAdapter) -> DeviceCommunicationService:
-        """Create device communication service with configured MQTT adapter."""
+        """
+        Creates a DeviceCommunicationService using the provided MQTT adapter.
+        
+        Args:
+            mqtt_adapter: The configured AiomqttAdapter to be used for device communication.
+        
+        Returns:
+            An instance of DeviceCommunicationService initialized with the given MQTT adapter.
+        """
         logger.info("Creating device communication service")
         return DeviceCommunicationService(mqtt_adapter)
     
@@ -68,10 +88,10 @@ class MqttServiceFactory:
         device_communication_service: Optional[DeviceCommunicationService] = None,
         access_validation_use_case: Optional[ValidateAccessUseCase] = None
     ) -> MqttDeviceHandler:
-        """Create MQTT device handler with optional dependencies.
+        """
+        Creates an MqttDeviceHandler with optional dependencies for device communication and access validation.
         
-        This allows for partial initialization that can be completed later,
-        maintaining backward compatibility with current initialization patterns.
+        Allows partial initialization of the device handler, enabling backward compatibility with existing initialization flows.
         """
         logger.info("Creating MQTT device handler")
         return MqttDeviceHandler(
@@ -84,13 +104,16 @@ class MqttServiceFactory:
     def create_complete_mqtt_services(
         mqtt_message_service: MqttMessageService
     ) -> tuple[AiomqttAdapter, DeviceCommunicationService, MqttDeviceHandler]:
-        """Create a complete set of MQTT services in the correct order.
+        """
+        Creates and wires a complete stack of MQTT services, including the adapter, device communication service, and device handler.
+        
+        The device handler is initialized without the access validation use case, which must be set separately to avoid circular dependencies.
+        
+        Args:
+            mqtt_message_service: Service used by the device handler for processing MQTT messages.
         
         Returns:
-            Tuple of (mqtt_adapter, device_communication_service, mqtt_device_handler)
-            
-        Note: The device handler will still need access_validation_use_case set separately
-        due to circular dependency constraints.
+            A tuple containing the MQTT adapter, device communication service, and device handler, fully connected for use.
         """
         logger.info("Creating complete MQTT service stack")
         
@@ -114,6 +137,12 @@ class MqttResilienceConfig:
     """Configuration class for MQTT resilience patterns."""
     
     def __init__(self):
+        """
+        Initializes MQTT resilience configuration parameters from application settings.
+        
+        Loads circuit breaker, connection resilience, retry, message buffering, and timeout
+        settings to configure MQTT client resilience behavior.
+        """
         settings = get_settings()
         
         # Circuit breaker settings

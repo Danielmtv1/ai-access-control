@@ -131,10 +131,9 @@ async def validate_access(
     mqtt_service: MqttMessageService = Depends(get_mqtt_message_service)
 ) -> AccessValidationResponse:
     """
-    Validate access request from IoT device.
+    Validates whether a card is authorized to access a specified door at the current time.
     
-    This endpoint validates whether the specified card can access the specified door
-    at the current time, considering all business rules and constraints.
+    This endpoint processes real-time access validation requests from IoT devices, applying all relevant business rules such as card and door validity, user permissions, schedules, PIN requirements, and lockout status. Returns a detailed response indicating whether access is granted, along with contextual information including the reason, door and user names, card type, PIN requirement, validity period, and timestamp.
     """
     try:
         logger.info(f"Access validation request received: {validation_request.model_dump()}")

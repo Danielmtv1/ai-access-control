@@ -14,7 +14,12 @@ class Base(DeclarativeBase):
     # updated_at = Column(DateTime, default=timezone.utcnow, onupdate=timezone.utcnow)
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert model instance to dictionary"""
+        """
+        Converts the model instance into a dictionary mapping column names to their values.
+        
+        Returns:
+            A dictionary where each key is a column name and each value is the corresponding attribute value from the instance.
+        """
         return {c.key: getattr(self, c.key) for c in self.__table__.columns}
     
     def __repr__(self) -> str:

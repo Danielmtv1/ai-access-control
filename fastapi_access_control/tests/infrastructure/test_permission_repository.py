@@ -16,19 +16,37 @@ class TestPermissionRepository:
     
     @pytest.fixture
     async def db_session(self):
-        """Mock database session."""
+        """
+        Provides a mocked asynchronous database session for testing purposes.
+        
+        Returns:
+            An AsyncMock instance simulating an AsyncSession.
+        """
         from unittest.mock import AsyncMock
         session = AsyncMock(spec=AsyncSession)
         return session
     
     @pytest.fixture
     def repository(self, db_session):
-        """Create PermissionRepository instance."""
+        """
+        Creates a PermissionRepository instance using the provided database session.
+        
+        Args:
+            db_session: The asynchronous database session to be used by the repository.
+        
+        Returns:
+            A PermissionRepository initialized with the given session.
+        """
         return PermissionRepository(db_session)
     
     @pytest.fixture
     def sample_permission(self):
-        """Sample permission entity."""
+        """
+        Creates a sample Permission entity with predefined attributes for testing purposes.
+        
+        Returns:
+            Permission: A Permission instance populated with sample data.
+        """
         return Permission(
             id=SAMPLE_CARD_UUID,
             user_id=SAMPLE_CARD_UUID,
@@ -45,7 +63,12 @@ class TestPermissionRepository:
     
     @pytest.fixture
     def sample_permission_model(self):
-        """Sample permission database model."""
+        """
+        Creates a sample PermissionModel instance with predefined attributes for testing purposes.
+        
+        Returns:
+            PermissionModel: A permission model populated with sample data.
+        """
         return PermissionModel(
             id=SAMPLE_CARD_UUID,
             user_id=SAMPLE_CARD_UUID,
@@ -62,7 +85,11 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_create_permission_success(self, repository, sample_permission, db_session):
-        """Test successful permission creation."""
+        """
+        Tests that a permission is successfully created in the repository.
+        
+        Verifies that the repository's create method returns a non-None result and that the database session's add, commit, and refresh methods are called once.
+        """
         # Arrange
         db_session.commit = AsyncMock()
         db_session.refresh = AsyncMock()
@@ -78,7 +105,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_create_permission_error(self, repository, sample_permission, db_session):
-        """Test permission creation with database error."""
+        """
+        Tests that creating a permission raises a RepositoryError and rolls back the transaction when a database error occurs.
+        """
         # Arrange
         db_session.commit.side_effect = Exception("Database error")
         db_session.rollback = AsyncMock()
@@ -90,7 +119,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_get_by_id_success(self, repository, sample_permission_model, db_session):
-        """Test successful get permission by ID."""
+        """
+        Tests that retrieving a permission by ID returns the expected permission when found.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -107,7 +138,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_get_by_id_not_found(self, repository, db_session):
-        """Test get permission by ID when not found."""
+        """
+        Tests that retrieving a permission by a non-existent ID returns None.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -122,7 +155,11 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_get_by_user_and_door_success(self, repository, sample_permission_model, db_session):
-        """Test successful get permission by user and door."""
+        """
+        Tests that retrieving a permission by user and door IDs returns the expected permission.
+        
+        Verifies that the repository returns a permission entity when a matching user and door are found in the database.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -139,7 +176,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_check_access_with_permission(self, repository, sample_permission_model, db_session):
-        """Test check access when permission exists."""
+        """
+        Tests that access is granted when a matching permission exists for the given user, door, time, and day.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -154,7 +193,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_check_access_no_permission(self, repository, db_session):
-        """Test check access when no permission exists."""
+        """
+        Tests that check_access returns False when no matching permission exists for the given user, door, time, and day.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -169,7 +210,11 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_update_permission_success(self, repository, sample_permission, sample_permission_model, db_session):
-        """Test successful permission update."""
+        """
+        Tests that updating a permission via the repository succeeds and commits changes.
+        
+        Verifies that the repository's update method returns a non-None result and that the session's commit and refresh methods are called when the permission exists.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -188,7 +233,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_update_permission_not_found(self, repository, sample_permission, db_session):
-        """Test update permission when not found."""
+        """
+        Tests that updating a non-existent permission raises a RepositoryError.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -201,7 +248,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_delete_permission_success(self, repository, sample_permission_model, db_session):
-        """Test successful permission deletion."""
+        """
+        Tests that deleting an existing permission returns True and commits the transaction.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -220,7 +269,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_delete_permission_not_found(self, repository, db_session):
-        """Test delete permission when not found."""
+        """
+        Tests that deleting a non-existent permission returns False.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -235,7 +286,11 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_list_permissions_success(self, repository, sample_permission_model, db_session):
-        """Test successful permissions listing."""
+        """
+        Tests that listing permissions returns the expected list of permission entities.
+        
+        Verifies that the repository's list_permissions method retrieves and returns a list containing the correct permission models when the database session returns results.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -251,7 +306,11 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_get_active_permissions_success(self, repository, sample_permission_model, db_session):
-        """Test successful active permissions retrieval."""
+        """
+        Tests that active permissions are successfully retrieved from the repository.
+        
+        Verifies that the repository returns a list containing only active permission entities when queried.
+        """
         # Arrange
         from unittest.mock import MagicMock
         mock_result = MagicMock()
@@ -267,7 +326,9 @@ class TestPermissionRepository:
     
     @pytest.mark.asyncio
     async def test_repository_error_handling(self, repository, db_session):
-        """Test repository error handling."""
+        """
+        Tests that the repository raises a RepositoryError when a database execution error occurs.
+        """
         # Arrange
         db_session.execute.side_effect = Exception("Database connection error")
         

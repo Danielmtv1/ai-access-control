@@ -136,7 +136,9 @@ class TestSqlAlchemyCardRepository:
         assert result.updated_at > card.created_at
     
     async def test_update_card_not_found(self, card_repository: SqlAlchemyCardRepository):
-        """Test updating card that doesn't exist"""
+        """
+        Tests that updating a non-existent card raises a RepositoryError with the expected message.
+        """
         now = datetime.now(UTC).replace(tzinfo=None)
         card = Card(
             id=999,  # Non-existent ID

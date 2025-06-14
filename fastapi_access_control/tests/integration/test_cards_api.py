@@ -11,13 +11,20 @@ class TestCardsAPI:
     
     @pytest.fixture
     def client(self):
-        """HTTP client for testing."""
+        """
+        Provides a FastAPI TestClient instance for making HTTP requests in integration tests.
+        """
         from app.main import app
         return TestClient(app)
     
     @pytest.fixture
     def mock_admin_user(self):
-        """Mock admin user for testing."""
+        """
+        Creates and returns a mock admin user entity for use in authentication during tests.
+        
+        Returns:
+            User: A user instance with admin role and active status.
+        """
         return User(
             id=SAMPLE_ADMIN_UUID,
             email="admin@test.com",
@@ -30,16 +37,26 @@ class TestCardsAPI:
         )
     
     def setup_auth_override(self, client, user):
-        """Helper to setup authentication override."""
+        """
+        Overrides the authentication dependency to return the specified user for test requests.
+        
+        This helper sets up a FastAPI dependency override so that all requests made with the test client are authenticated as the provided user.
+        """
         from app.api.dependencies.auth_dependencies import get_current_active_user
         client.app.dependency_overrides[get_current_active_user] = lambda: user
         
     def cleanup_overrides(self, client):
-        """Helper to cleanup dependency overrides."""
+        """
+        Removes all dependency overrides from the FastAPI application associated with the test client.
+        """
         client.app.dependency_overrides.clear()
 
     def test_create_card_success(self, client, mock_admin_user):
-        """Test successful card creation"""
+        """
+        Tests that a card can be successfully created via the API when valid data and authentication are provided.
+        
+        Verifies that the response status is 201 and the returned card fields match the input.
+        """
         with patch('app.api.v1.cards.CreateCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -87,7 +104,9 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_create_card_unauthorized(self, client):
-        """Test card creation without authentication"""
+        """
+        Tests that creating a card without authentication returns a 401 Unauthorized error.
+        """
         card_data = {
             "card_id": "CARD001",
             "user_id": str(SAMPLE_USER_UUID),
@@ -100,7 +119,11 @@ class TestCardsAPI:
         assert "Not authenticated" in response.json()["detail"]
 
     def test_create_card_validation_error(self, client, mock_admin_user):
-        """Test card creation with invalid data"""
+        """
+        Tests that creating a card with invalid data returns a 422 validation error.
+        
+        Sends a POST request with an empty card_id, an invalid user_id UUID, and an invalid card_type, and asserts that the API responds with a validation error.
+        """
         # Setup authentication
         self.setup_auth_override(client, mock_admin_user)
         
@@ -120,7 +143,11 @@ class TestCardsAPI:
             self.cleanup_overrides(client)
 
     def test_get_card_success(self, client, mock_admin_user):
-        """Test successful card retrieval"""
+        """
+        Tests that retrieving a card by UUID returns the correct card data and a 200 response.
+        
+        Simulates a successful card retrieval using a mocked use case and verifies that the response contains the expected card fields, including use_count.
+        """
         with patch('app.api.v1.cards.GetCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -159,7 +186,11 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_get_card_not_found(self, client, mock_admin_user):
-        """Test card retrieval when card doesn't exist"""
+        """
+        Tests that retrieving a non-existent card returns a 404 Not Found response.
+        
+        Simulates the scenario where the card retrieval use case raises an EntityNotFoundError, ensuring the API responds with the appropriate HTTP status code.
+        """
         with patch('app.api.v1.cards.GetCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -180,7 +211,11 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_get_card_by_card_id_success(self, client, mock_admin_user):
-        """Test card retrieval by card_id"""
+        """
+        Tests successful retrieval of a card by its card_id via the API.
+        
+        Simulates authentication and mocks the use case to return a card when queried by card_id, then verifies the API returns the correct card data with a 200 status code.
+        """
         with patch('app.api.v1.cards.GetCardByCardIdUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -217,7 +252,11 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_get_user_cards_success(self, client, mock_admin_user):
-        """Test retrieving cards for a user"""
+        """
+        Tests successful retrieval of all cards associated with a specific user.
+        
+        Simulates an authenticated request to the Cards API endpoint for listing cards belonging to a user, using mocked use case logic to return multiple card entities. Verifies that the response contains the expected number of cards and correct user association.
+        """
         with patch('app.api.v1.cards.GetUserCardsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -269,7 +308,11 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_list_cards_success(self, client, mock_admin_user):
-        """Test listing all cards"""
+        """
+        Tests that the API endpoint for listing all cards returns the expected list of cards.
+        
+        Verifies that an authenticated request to the cards listing endpoint returns a 200 response and the correct number of cards in the response payload.
+        """
         with patch('app.api.v1.cards.ListCardsUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -308,7 +351,9 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_update_card_success(self, client, mock_admin_user):
-        """Test successful card update"""
+        """
+        Tests that updating a card with valid data returns a 200 response and the updated card information.
+        """
         with patch('app.api.v1.cards.UpdateCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -350,7 +395,9 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_suspend_card_success(self, client, mock_admin_user):
-        """Test card suspension"""
+        """
+        Tests that suspending a card via the API returns a 200 response and updates the card status to "suspended".
+        """
         with patch('app.api.v1.cards.SuspendCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -387,7 +434,11 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_deactivate_card_success(self, client, mock_admin_user):
-        """Test card deactivation"""
+        """
+        Tests successful deactivation of a card via the API.
+        
+        Simulates an authenticated admin user deactivating a card and verifies that the response status is 200 and the card status is set to "inactive".
+        """
         with patch('app.api.v1.cards.DeactivateCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -424,7 +475,9 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_delete_card_success(self, client, mock_admin_user):
-        """Test successful card deletion"""
+        """
+        Tests that a card can be successfully deleted via the API, returning a 204 status code.
+        """
         with patch('app.api.v1.cards.DeleteCardUseCase') as mock_use_case_class:
             
             # Setup authentication
@@ -444,7 +497,11 @@ class TestCardsAPI:
                 self.cleanup_overrides(client)
 
     def test_delete_card_not_found(self, client, mock_admin_user):
-        """Test card deletion when card doesn't exist"""
+        """
+        Tests that deleting a non-existent card returns a 404 Not Found response.
+        
+        Simulates the card deletion use case returning False to indicate the card does not exist, then verifies the API responds with the appropriate status code.
+        """
         with patch('app.api.v1.cards.DeleteCardUseCase') as mock_use_case_class:
             
             # Setup authentication

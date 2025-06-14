@@ -25,11 +25,17 @@ pytestmark = pytest.mark.asyncio
 
 @pytest.fixture
 async def client(db_session):
-    """HTTP client for testing with database dependency override."""
+    """
+    Provides an HTTP async client for testing with the database dependency overridden to use the test session.
+    
+    Yields:
+        An AsyncClient instance configured for the test application with the test database session.
+    """
     from app.shared.database.session import get_db
     
     # Override the database dependency to use test session
     async def override_get_db():
+        Yields the test database session for dependency injection in asynchronous test clients.
         yield db_session
     
     app.dependency_overrides[get_db] = override_get_db
@@ -42,19 +48,34 @@ async def client(db_session):
 
 @pytest.fixture
 async def auth_service():
-    """Auth service for token generation."""
+    """
+    Provides an authentication service instance for use in tests.
+    
+    Returns:
+        An instance of AuthService for token generation and password hashing.
+    """
     return AuthService()
 
 @pytest.fixture
 async def mqtt_client_connected():
-    """Provide connected mock MQTT client."""
+    """
+    Provides a connected mock MQTT client for use in integration tests.
+    
+    Returns:
+        A connected instance of MockMQTTClient.
+    """
     client = MockMQTTClient()
     await client.connect()
     return client
 
 @pytest.fixture
 async def admin_user(db_session: AsyncSession, auth_service: AuthService):
-    """Create admin user for authenticated requests."""
+    """
+    Creates and persists an admin user in the test database for use in authenticated test scenarios.
+    
+    Returns:
+        The created admin user model instance.
+    """
     hashed_password = auth_service.hash_password("AdminPassword123!")
     user_model = UserModel(
         email="admin@test.com",
@@ -72,7 +93,12 @@ async def admin_user(db_session: AsyncSession, auth_service: AuthService):
 
 @pytest.fixture
 async def auth_headers(admin_user, auth_service: AuthService):
-    """Authentication headers for API requests."""
+    """
+    Generates authentication headers with a bearer token for the given admin user.
+    
+    Returns:
+        A dictionary containing the Authorization header for authenticated API requests.
+    """
     token_pair = auth_service.generate_token_pair(
         user_id=str(admin_user.id),
         email=admin_user.email,
@@ -82,7 +108,12 @@ async def auth_headers(admin_user, auth_service: AuthService):
 
 @pytest.fixture
 async def test_data(db_session: AsyncSession):
-    """Create comprehensive test data using IntegrationSeeder."""
+    """
+    Seeds the database with comprehensive test data for access control integration tests.
+    
+    Returns:
+        The result of the seeding operation, typically including created users, cards, doors, and permissions for use in integration tests.
+    """
     seeder = IntegrationSeeder(db_session)
     return await seeder.seed_complete_access_flow_data()
 
@@ -96,7 +127,11 @@ class TestCompleteAccessFlow:
         test_data: dict,
         mqtt_client_connected
     ):
-        """Test complete successful access validation flow."""
+        """
+        Tests a complete successful access validation flow for a regular user.
+        
+        Simulates an access validation request for a user with a standard card at a low-security door, asserting that access is granted, the response contains correct user and door information, and an MQTT event is published.
+        """
         # Extract data from seeder
         user = test_data['regular_user']
         doors = test_data['doors']
@@ -128,7 +163,11 @@ class TestCompleteAccessFlow:
         test_cards: list[CardModel],
         mqtt_client_connected
     ):
-        """Test master card access to any door."""
+        """
+        Tests that a master card grants access to a high-security door without explicit permission.
+        
+        Asserts that access is granted with the correct card type and reason, and verifies that an MQTT event is published for the door.
+        """
         doors = test_doors
         cards = test_cards
         
@@ -156,7 +195,11 @@ class TestCompleteAccessFlow:
         test_doors: list[DoorModel],
         test_cards: list[CardModel]
     ):
-        """Test that suspended cards are denied access."""
+        """
+        Tests that access is denied when a suspended card is used for validation.
+        
+        Sends an access validation request with a suspended card and verifies that the response status is 403 Forbidden, access is not granted, and the denial reason indicates card suspension.
+        """
         doors = test_doors
         cards = test_cards
         
@@ -179,7 +222,11 @@ class TestCompleteAccessFlow:
         test_doors: list[DoorModel],
         test_cards: list[CardModel]
     ):
-        """Test that maintenance doors deny all access."""
+        """
+        Tests that access is denied when attempting to use an active card on a door marked as under maintenance.
+        
+        Asserts that the API returns HTTP 403, access is not granted, and the denial reason indicates maintenance status.
+        """
         doors = test_doors
         cards = test_cards
         
@@ -202,7 +249,11 @@ class TestCompleteAccessFlow:
         test_doors: list[DoorModel],
         test_cards: list[CardModel]
     ):
-        """Test that users without permission are denied access."""
+        """
+        Verifies that access is denied when a user lacks permission for a specific door.
+        
+        Sends an access validation request for a user without the required permission and asserts that the response is HTTP 403 with an appropriate denial reason.
+        """
         doors = test_doors
         cards = test_cards
         
@@ -226,7 +277,11 @@ class TestCompleteAccessFlow:
         test_employee_user: UserModel,
         db_session: AsyncSession
     ):
-        """Test card management endpoints."""
+        """
+        Tests the card management API endpoints for creating and retrieving a card.
+        
+        Creates a new card for an employee user via the API and verifies the response. Then retrieves the created card by its ID and asserts that the returned data matches the expected user and card information.
+        """
         employee_user = test_employee_user
         headers = auth_headers
         
@@ -265,7 +320,11 @@ class TestCompleteAccessFlow:
         client: AsyncClient,
         auth_headers: dict
     ):
-        """Test door management endpoints."""
+        """
+        Tests the door management API endpoints for creation and retrieval.
+        
+        Creates a new door using the API and verifies the response data, then retrieves the created door by ID and asserts the returned details match the input.
+        """
         headers = auth_headers
         
         # Create new door
@@ -302,7 +361,11 @@ class TestCompleteAccessFlow:
         self,
         client: AsyncClient
     ):
-        """Test that management endpoints require authentication."""
+        """
+        Verifies that card and door management API endpoints reject unauthenticated requests.
+        
+        Sends POST requests to create cards and doors without authentication headers and asserts that both endpoints return HTTP 401 Unauthorized.
+        """
         # Try to create a card without auth
         response = await client.post(
             "/api/v1/cards",
@@ -332,7 +395,11 @@ class TestCompleteAccessFlow:
         client: AsyncClient,
         auth_headers: dict
     ):
-        """Test validation of invalid data."""
+        """
+        Tests that the API returns validation errors for invalid card and door data.
+        
+        Sends requests with invalid fields to the card and door creation endpoints and asserts that the responses have HTTP 422 status codes.
+        """
         headers = auth_headers
         
         # Invalid card data
@@ -369,7 +436,11 @@ class TestCompleteAccessFlow:
         test_doors: list[DoorModel],
         test_cards: list[CardModel]
     ):
-        """Test concurrent access validation requests."""
+        """
+        Tests that multiple concurrent access validation requests for a user with valid permission all succeed.
+        
+        Creates an active permission for the user and sends five simultaneous access validation requests to the API, asserting that each response grants access.
+        """
         import asyncio
         employee_user = test_employee_user
         doors = test_doors
@@ -396,6 +467,12 @@ class TestCompleteAccessFlow:
         
         # Make concurrent requests
         async def make_request():
+            """
+            Sends an asynchronous POST request to validate access for a specific card and door.
+            
+            Returns:
+                The HTTP response from the access validation endpoint.
+            """
             return await client.post(
                 "/api/v1/access/validate",
                 json={"card_id": active_card.card_id, "door_id": str(office_door.id)}
@@ -414,7 +491,11 @@ class TestCompleteAccessFlow:
         self,
         client: AsyncClient
     ):
-        """Test health check and metrics endpoints."""
+        """
+        Verifies that the health check and metrics API endpoints return expected status and data.
+        
+        Sends requests to the health and metrics endpoints, asserting HTTP 200 responses and validating the presence of expected keys in the returned JSON.
+        """
         # Health check
         response = await client.get("/health")
         assert response.status_code == 200
@@ -433,7 +514,11 @@ class TestCompleteAccessFlow:
         self,
         client: AsyncClient
     ):
-        """Test API documentation endpoints."""
+        """
+        Verifies that the OpenAPI JSON and Swagger UI documentation endpoints are accessible and return the expected content.
+        
+        Asserts that the OpenAPI endpoint returns a valid specification with required keys, and that the Swagger UI endpoint serves HTML content.
+        """
         # OpenAPI JSON
         response = await client.get("/openapi.json")
         assert response.status_code == 200

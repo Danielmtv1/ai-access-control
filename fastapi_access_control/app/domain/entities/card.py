@@ -34,11 +34,18 @@ class Card:
     use_count: int
     last_used: Optional[datetime] = None
     def _now() -> datetime:
-        """Get current time as timezone-naive datetime"""
+        """
+        Returns the current UTC time as a timezone-naive datetime object.
+        """
         return datetime.now(timezone.utc).replace(tzinfo=None)
     
     def is_active(self) -> bool:
-        """Business logic: Card can be used for access"""
+        """
+        Checks if the card is currently active and within its validity period.
+        
+        Returns:
+            True if the card status is ACTIVE and the current time is between valid_from and valid_until (if set); otherwise, False.
+        """
         if self.status != CardStatus.ACTIVE:
             return False
         

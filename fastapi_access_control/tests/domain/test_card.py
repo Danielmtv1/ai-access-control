@@ -12,7 +12,9 @@ class TestCard:
     """Test cases for Card domain entity"""
     
     def test_card_creation(self):
-        """Test Card entity creation with valid data"""
+        """
+        Verifies that a Card instance is correctly created with valid attributes and initial state.
+        """
         now = datetime.now()
         valid_until = now + timedelta(days=365)
         
@@ -40,7 +42,9 @@ class TestCard:
         assert card.last_used is None
     
     def test_card_is_active_with_active_status(self):
-        """Test card is_active returns True for ACTIVE status"""
+        """
+        Tests that a card with ACTIVE status and a valid date range is considered active.
+        """
         now = datetime.now()
         
         card = Card(
@@ -59,7 +63,9 @@ class TestCard:
         assert card.is_active() is True
     
     def test_card_is_active_with_inactive_status(self):
-        """Test card is_active returns False for INACTIVE status"""
+        """
+        Verifies that is_active() returns False when the card status is INACTIVE.
+        """
         now = datetime.now()
         
         card = Card(
@@ -78,7 +84,9 @@ class TestCard:
         assert card.is_active() is False
     
     def test_card_is_active_with_future_valid_from(self):
-        """Test card is_active returns False if valid_from is in the future"""
+        """
+        Tests that a card with a future valid_from date is not considered active.
+        """
         now = datetime.now()
         
         card = Card(
@@ -97,7 +105,9 @@ class TestCard:
         assert card.is_active() is False
     
     def test_card_is_active_with_past_valid_until(self):
-        """Test card is_active returns False if valid_until is in the past"""
+        """
+        Tests that is_active() returns False when the card's valid_until date is in the past.
+        """
         now = datetime.now()
         
         card = Card(
@@ -173,7 +183,9 @@ class TestCard:
         assert card.can_access() is True
     
     def test_card_can_access_when_inactive(self):
-        """Test card can_access returns False when card is inactive"""
+        """
+        Verifies that can_access() returns False for a card with inactive status.
+        """
         now = datetime.now()
         
         card = Card(
@@ -192,7 +204,9 @@ class TestCard:
         assert card.can_access() is False
     
     def test_card_is_master_card_with_master_type(self):
-        """Test is_master_card returns True for MASTER type when active"""
+        """
+        Verifies that is_master_card() returns True for an active card of type MASTER.
+        """
         now = datetime.now()
         
         card = Card(
@@ -211,7 +225,9 @@ class TestCard:
         assert card.is_master_card() is True
     
     def test_card_is_master_card_with_master_type_but_inactive(self):
-        """Test is_master_card returns False for MASTER type when inactive"""
+        """
+        Tests that is_master_card() returns False for a MASTER type card when its status is inactive.
+        """
         now = datetime.now()
         
         card = Card(
@@ -249,7 +265,9 @@ class TestCard:
         assert card.is_temporary_card() is True
     
     def test_card_record_usage(self):
-        """Test record_usage updates last_used and use_count"""
+        """
+        Verifies that calling record_usage() on a Card updates last_used, increments use_count, and updates updated_at.
+        """
         now = datetime.now()
         
         card = Card(
@@ -277,7 +295,9 @@ class TestCard:
         assert card.updated_at > original_updated_at
     
     def test_card_suspend(self):
-        """Test suspend changes status to SUSPENDED"""
+        """
+        Tests that suspending a card sets its status to SUSPENDED and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         card = Card(
@@ -303,7 +323,9 @@ class TestCard:
         assert card.updated_at > original_updated_at
     
     def test_card_activate(self):
-        """Test activate changes status to ACTIVE"""
+        """
+        Verifies that activating a suspended card sets its status to ACTIVE and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         card = Card(
@@ -329,7 +351,9 @@ class TestCard:
         assert card.updated_at > original_updated_at
     
     def test_card_mark_as_lost(self):
-        """Test mark_as_lost changes status to LOST"""
+        """
+        Verifies that calling mark_as_lost() sets the card status to LOST and updates the updated_at timestamp.
+        """
         now = datetime.now()
         
         card = Card(

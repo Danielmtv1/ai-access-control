@@ -48,7 +48,19 @@ class PermissionMapper:
     
     @staticmethod
     def update_model_from_domain(model: PermissionModel, permission: Permission) -> PermissionModel:
-        """Actualiza un modelo de base de datos con los datos de una entidad de dominio"""
+        """
+        Updates a PermissionModel instance with data from a Permission domain entity.
+        
+        All fields except the model's ID are updated to match the domain entity. The updated_at
+        field is set to the current datetime.
+        
+        Args:
+            model: The PermissionModel instance to update.
+            permission: The Permission domain entity providing updated data.
+        
+        Returns:
+            The updated PermissionModel instance.
+        """
         model.user_id = permission.user_id
         model.door_id = permission.door_id
         model.card_id = permission.card_id

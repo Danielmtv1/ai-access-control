@@ -20,23 +20,40 @@ class TestErrorHandling:
     """Integration tests for error handling scenarios."""
     @pytest.fixture
     async def client(self):
-        """HTTP client for testing."""
+        """
+        Provides an asynchronous HTTP client for integration tests.
+        
+        Yields:
+            An instance of AsyncClient configured for the FastAPI app.
+        """
         async with AsyncClient(app=app, base_url="http://test") as ac:
             yield ac
     
     @pytest.fixture
     async def db_session(self):
-        """Database session for testing."""
+        """
+        Yields an asynchronous database session for use in integration tests.
+        
+        This fixture provides a single session from the application's database session generator.
+        """
         async for session in get_db():
             yield session
             break
     
     @pytest.mark.asyncio
     async def test_database_connection_error(self, client: AsyncClient):
-        """Test API behavior when database is unavailable."""
+        """
+        Tests that the access validation API returns HTTP 500 when the database connection fails.
+        """
         with patch('app.shared.database.session.get_db') as mock_get_db:
             # Simulate database connection error
             async def failing_db():
+                """
+                Simulates a database connection failure by raising an exception.
+                
+                Raises:
+                    Exception: Always raised to indicate a failed database connection.
+                """
                 raise Exception("Database connection failed")
             
             mock_get_db.return_value = failing_db()
@@ -51,7 +68,9 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_malformed_json_request(self, client: AsyncClient):
-        """Test API response to malformed JSON."""
+        """
+        Tests that the API returns HTTP 422 when receiving a malformed JSON payload.
+        """
         response = await client.post(
             "/api/v1/access/validate",
             content="invalid json content",
@@ -62,7 +81,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_extremely_large_request(self, client: AsyncClient):
-        """Test API response to extremely large request data."""
+        """
+        Tests that the API rejects requests with an excessively large `card_id` value.
+        
+        Sends a request to the access validation endpoint with a `card_id` string of 10,000 characters and verifies that the API responds with HTTP 422 Unprocessable Entity due to input validation.
+        """
         large_card_id = "X" * 10000  # Very large card ID
         
         response = await client.post(
@@ -75,7 +98,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_special_characters_in_card_id(self, client: AsyncClient):
-        """Test handling of special characters in card IDs."""
+        """
+        Tests API response to card IDs containing special characters.
+        
+        Sends access validation requests with card IDs that include symbols, whitespace, control characters, null bytes, and emojis, verifying the API returns either 404 (not found) or 422 (validation error).
+        """
         special_chars_cards = [
             "card@#$%",
             "card with spaces",
@@ -95,7 +122,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_sql_injection_attempts(self, client: AsyncClient):
-        """Test protection against SQL injection attempts."""
+        """
+        Verifies that the access validation endpoint safely handles SQL injection attempts in the card ID field.
+        
+        Sends typical SQL injection payloads as `card_id` and asserts the API responds with HTTP 404 and an appropriate error message, confirming no injection is executed.
+        """
         sql_injection_attempts = [
             "'; DROP TABLE cards; --",
             "1' OR '1'='1",
@@ -116,7 +147,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_concurrent_card_operations(self, client: AsyncClient, db_session: AsyncSession):
-        """Test concurrent operations on the same card."""
+        """
+        Verifies that concurrent access validation requests for the same card and door do not cause server errors.
+        
+        Creates a user, card, and door in the database, then issues 10 simultaneous POST requests to the access validation endpoint using the same card and door. Asserts that no HTTP 500 errors occur, ensuring the API handles concurrent operations safely.
+        """
         import asyncio
         
         # Create test user and card
@@ -159,6 +194,12 @@ class TestErrorHandling:
         
         # Make multiple concurrent access validation requests
         async def validate_access():
+            """
+            Sends an asynchronous POST request to the access validation endpoint with a specified card and door ID.
+            
+            Returns:
+                The HTTP response from the access validation API.
+            """
             return await client.post(
                 "/api/v1/access/validate",
                 json={"card_id": "CONCURRENT001", "door_id": str(door.id)}
@@ -176,7 +217,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_missing_content_type_header(self, client: AsyncClient):
-        """Test API response when Content-Type header is missing."""
+        """
+        Tests the API's behavior when a POST request is sent without a Content-Type header.
+        
+        Sends a raw JSON payload to the access validation endpoint without specifying the Content-Type header and asserts that the response status code is one of the expected values, indicating graceful handling or appropriate error reporting.
+        """
         response = await client.post(
             "/api/v1/access/validate",
             content=f'{"card_id": "TEST123", "door_id": "{SAMPLE_DOOR_UUID}"}'
@@ -188,7 +233,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_unsupported_http_methods(self, client: AsyncClient):
-        """Test unsupported HTTP methods on access validation endpoint."""
+        """
+        Verifies that the access validation endpoint rejects unsupported HTTP methods.
+        
+        Sends GET, PUT, and DELETE requests to the POST-only endpoint and asserts that each returns HTTP 405 Method Not Allowed.
+        """
         # Test GET (should be 405 Method Not Allowed)
         response = await client.get("/api/v1/access/validate")
         assert response.status_code == 405
@@ -206,7 +255,9 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_extremely_large_door_id(self, client: AsyncClient):
-        """Test handling of invalid UUID format for door IDs."""
+        """
+        Tests that the API returns a 422 validation error when an invalid UUID string is provided as the door ID.
+        """
         invalid_door_uuid = "invalid-uuid-format"
         
         response = await client.post(
@@ -219,7 +270,9 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_negative_door_id(self, client: AsyncClient):
-        """Test handling of invalid UUID format for door IDs."""
+        """
+        Tests that providing an invalid UUID string as the door ID results in a 422 Unprocessable Entity response.
+        """
         response = await client.post(
             "/api/v1/access/validate",
             json={"card_id": "TEST123", "door_id": "negative-invalid"}
@@ -230,7 +283,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_zero_door_id(self, client: AsyncClient):
-        """Test handling of nil UUID for door ID."""
+        """
+        Tests the API's response when a nil UUID is provided as the door ID.
+        
+        Sends an access validation request with a valid card ID and a door ID set to the nil UUID. Expects a 404 Not Found response, indicating the door does not exist.
+        """
         response = await client.post(
             "/api/v1/access/validate",
             json={"card_id": "TEST123", "door_id": "00000000-0000-0000-0000-000000000000"}
@@ -241,7 +298,9 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_float_door_id(self, client: AsyncClient):
-        """Test handling of invalid UUID format for door IDs."""
+        """
+        Tests that providing a float-like string as a door ID results in a 422 validation error.
+        """
         response = await client.post(
             "/api/v1/access/validate",
             json={"card_id": "TEST123", "door_id": "invalid.5"}
@@ -252,7 +311,9 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_null_values_in_request(self, client: AsyncClient):
-        """Test handling of null values in request."""
+        """
+        Tests that the access validation endpoint returns HTTP 422 when null values are provided for card_id or door_id in the request payload.
+        """
         # Null card_id
         response = await client.post(
             "/api/v1/access/validate",
@@ -269,7 +330,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_unicode_handling(self, client: AsyncClient):
-        """Test handling of Unicode characters in requests."""
+        """
+        Tests the API's handling of Unicode characters in the `card_id` field during access validation.
+        
+        Sends requests with various Unicode `card_id` values (including Chinese, Greek, Japanese, and emoji) to the access validation endpoint and asserts that the API responds with either HTTP 404 or 422, and always returns a valid JSON response.
+        """
         unicode_card_ids = [
             "测试卡片123",  # Chinese characters
             "κάρτα123",    # Greek characters
@@ -291,7 +356,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_repository_timeout_simulation(self, client: AsyncClient):
-        """Test behavior when repository operations timeout."""
+        """
+        Simulates a repository timeout during access validation and verifies the API returns HTTP 500.
+        
+        This test patches the card repository to raise an asyncio.TimeoutError, mimicking a backend timeout scenario, and asserts that the API responds with a 500 Internal Server Error.
+        """
         with patch('app.infrastructure.persistence.adapters.card_repository.SqlAlchemyCardRepository.get_by_card_id') as mock_get_card:
             # Simulate timeout
             mock_get_card.side_effect = asyncio.TimeoutError("Database timeout")
@@ -306,7 +375,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_invalid_authentication_tokens(self, client: AsyncClient):
-        """Test handling of invalid authentication tokens."""
+        """
+        Verifies that the API returns 401 Unauthorized for requests with invalid or malformed authentication tokens.
+        
+        Sends GET requests to the protected cards endpoint using various invalid `Authorization` headers and asserts that unauthorized access is correctly rejected.
+        """
         invalid_tokens = [
             "Bearer invalid_token",
             "Bearer ",
@@ -325,7 +398,11 @@ class TestErrorHandling:
     
     @pytest.mark.asyncio
     async def test_rate_limiting_simulation(self, client: AsyncClient):
-        """Test rapid successive requests (basic rate limiting test)."""
+        """
+        Simulates rapid successive access validation requests to test API rate limiting and robustness.
+        
+        Sends 50 rapid POST requests with unique card IDs to the access validation endpoint and asserts that no internal server errors (HTTP 500) occur, and that the majority of responses are HTTP 404 (not found).
+        """
         # Make 50 rapid requests
         responses = []
         for i in range(50):

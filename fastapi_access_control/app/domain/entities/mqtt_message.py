@@ -12,7 +12,12 @@ class MqttMessage:
     id: Optional[UUID] = None
     
     def __post_init__(self):
-        """Validate business rules after initialization"""
+        """
+        Validates the topic and message fields after initialization.
+        
+        Raises:
+            ValueError: If the topic or message is empty or contains only whitespace, or if the topic contains MQTT wildcard characters (# or +).
+        """
         if not self.topic.strip():
             raise ValueError("Topic cannot be empty")
         if not self.message.strip():

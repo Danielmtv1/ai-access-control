@@ -11,6 +11,12 @@ from starlette.types import ASGIApp
 class UUIDEncoder(json.JSONEncoder):
     """Custom JSON encoder that handles UUID objects"""
     def default(self, obj):
+        """
+        Serializes uuid.UUID objects as strings for JSON encoding.
+        
+        Returns the string representation of a UUID object, or delegates to the default
+        JSON encoder for other types.
+        """
         if isinstance(obj, uuid.UUID):
             return str(obj)
         return super().default(obj)
@@ -19,7 +25,11 @@ class JsonFormatter(logging.Formatter):
     """JSON formatter for structured logging"""
     
     def format(self, record: logging.LogRecord) -> str:
-        """Format log record as JSON"""
+        """
+        Formats a log record as a JSON string with structured fields.
+        
+        Includes timestamp, log level, message, module, function name, and line number. Merges any extra fields from the log record and adds exception details if present. Supports serialization of UUID objects.
+        """
         log_data = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": record.levelname,
@@ -44,7 +54,11 @@ class JsonFormatter(logging.Formatter):
         return json.dumps(log_data, cls=UUIDEncoder)
 
 def configure_logging():
-    """Configure structured logging for the application"""
+    """
+    Configures structured JSON logging for the application.
+    
+    Sets up the root logger with INFO level and a basic text format, elevates specific loggers to DEBUG level, and applies a JSON formatter to all root logger handlers for structured log output.
+    """
     
     # Configure root logger
     logging.basicConfig(

@@ -175,7 +175,9 @@ class TestAuthService:
         assert payload is None
     
     def test_decode_token_expired(self):
-        """Test decoding expired token"""
+        """
+        Tests that decoding an expired JWT access token returns None.
+        """
         auth_service = AuthService()
         user_id = uuid4()
         
@@ -255,7 +257,9 @@ class TestAuthService:
         assert claims is None
     
     def test_extract_user_claims_malformed_payload(self):
-        """Test extracting user claims from token with malformed payload"""
+        """
+        Tests that extracting user claims from a token with a malformed payload (missing required fields) returns None.
+        """
         auth_service = AuthService()
         
         # Create token with missing required fields

@@ -26,7 +26,29 @@ class CreateDoorUseCase:
                      max_attempts: int = 3,
                      lockout_duration: int = 300,
                      default_schedule_data: Optional[dict] = None) -> Door:
-        """Create new door"""
+        """
+                     Creates a new Door entity with the specified attributes.
+                     
+                     Checks for duplicate door names and raises an EntityAlreadyExistsError if a door with the same name exists. Optionally parses and validates a default access schedule. Initializes the door with provided and default values, sets timestamps, and persists the new door via the repository.
+                     
+                     Args:
+                         name: The unique name for the door.
+                         location: The location where the door is installed.
+                         door_type: The type of the door (e.g., main, emergency).
+                         security_level: The security level assigned to the door.
+                         description: Optional description of the door.
+                         requires_pin: Whether a PIN is required for access.
+                         max_attempts: Maximum allowed failed PIN attempts before lockout.
+                         lockout_duration: Lockout duration in seconds after exceeding max attempts.
+                         default_schedule_data: Optional dictionary specifying the default access schedule.
+                     
+                     Returns:
+                         The created Door entity.
+                     
+                     Raises:
+                         EntityAlreadyExistsError: If a door with the given name already exists.
+                         DomainError: If the provided default schedule data is invalid.
+                     """
         
         # Check if door name already exists
         existing_door = await self.door_repository.get_by_name(name)
@@ -74,7 +96,15 @@ class GetDoorUseCase:
         self.door_repository = door_repository
     
     async def execute(self, door_id: UUID) -> Door:
-        """Get door by ID"""
+        """
+        Retrieves a Door entity by its UUID.
+        
+        Raises:
+            DoorNotFoundError: If no door with the specified UUID exists.
+        
+        Returns:
+            The Door entity corresponding to the given UUID.
+        """
         door = await self.door_repository.get_by_id(door_id)
         if not door:
             raise DoorNotFoundError(str(door_id))
@@ -87,7 +117,15 @@ class GetDoorByNameUseCase:
         self.door_repository = door_repository
     
     async def execute(self, name: str) -> Door:
-        """Get door by name"""
+        """
+        Retrieves a Door entity by its name.
+        
+        Raises:
+            DoorNotFoundError: If no door with the specified name exists.
+        
+        Returns:
+            The Door entity matching the provided name.
+        """
         door = await self.door_repository.get_by_name(name)
         if not door:
             raise DoorNotFoundError(name, f"Door with name '{name}' not found")
@@ -120,7 +158,26 @@ class UpdateDoorUseCase:
                      max_attempts: Optional[int] = None,
                      lockout_duration: Optional[int] = None,
                      default_schedule_data: Optional[dict] = None) -> Door:
-        """Update door"""
+        """
+                     Updates an existing Door entity with new attribute values.
+                     
+                     If a new name is provided, checks for uniqueness among doors. Updates fields such as location, description, door type, security level, PIN requirements, maximum attempts, lockout duration, and default access schedule if corresponding arguments are supplied. If `default_schedule_data` is an empty dictionary, removes the default schedule. Raises `DoorNotFoundError` if the door does not exist, and `EntityAlreadyExistsError` if the new name is already in use by another door. Raises `DomainError` if the schedule data is invalid.
+                     
+                     Args:
+                         door_id: The UUID of the door to update.
+                         name: New name for the door, if changing.
+                         location: New location for the door, if changing.
+                         description: New description for the door, if changing.
+                         door_type: New door type, if changing.
+                         security_level: New security level, if changing.
+                         requires_pin: Whether the door requires a PIN, if changing.
+                         max_attempts: New maximum allowed failed PIN attempts, if changing.
+                         lockout_duration: New lockout duration in seconds, if changing.
+                         default_schedule_data: Dictionary with schedule details to set or remove the default access schedule.
+                     
+                     Returns:
+                         The updated Door entity.
+                     """
         
         # Get existing door
         door = await self.door_repository.get_by_id(door_id)
@@ -176,7 +233,18 @@ class SetDoorStatusUseCase:
         self.door_repository = door_repository
     
     async def execute(self, door_id: UUID, status: str) -> Door:
-        """Set door status"""
+        """
+        Sets the status of a door identified by its UUID.
+        
+        Updates the door's status to the specified value, applying domain-specific logic for recognized statuses. Raises DoorNotFoundError if the door does not exist.
+        
+        Args:
+            door_id: The UUID of the door to update.
+            status: The new status to set for the door.
+        
+        Returns:
+            The updated Door entity.
+        """
         
         # Get existing door
         door = await self.door_repository.get_by_id(door_id)
@@ -236,7 +304,15 @@ class DeleteDoorUseCase:
         self.door_repository = door_repository
     
     async def execute(self, door_id: UUID) -> bool:
-        """Delete door"""
+        """
+        Deletes a door identified by its UUID.
+        
+        Raises:
+            DoorNotFoundError: If no door with the specified UUID exists.
+        
+        Returns:
+            True if the door was successfully deleted, False otherwise.
+        """
         
         # Check if door exists
         door = await self.door_repository.get_by_id(door_id)

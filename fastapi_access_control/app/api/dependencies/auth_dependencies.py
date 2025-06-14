@@ -12,7 +12,14 @@ from app.domain.services.mqtt_message_service import MqttMessageService
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), user_repository: UserRepositoryPort = Depends(get_user_repository)) -> User:
-    """Get current authenticated user from JWT token"""
+    """
+    Retrieves the currently authenticated user based on the provided JWT access token.
+    
+    Validates the token, extracts the user ID, and fetches the corresponding user from the repository. Raises an HTTP 401 Unauthorized error if the token is invalid, the user ID is missing or malformed, or the user does not exist.
+    
+    Returns:
+        The authenticated User entity.
+    """
     try:
         auth_service = AuthService()
         
@@ -52,7 +59,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme), user_repository:
         )
 
 async def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    """Get current active user"""
+    """
+    Retrieves the currently authenticated and active user.
+    
+    Raises:
+        HTTPException: If the user is inactive.
+    
+    Returns:
+        The active User entity.
+    """
     if not current_user.is_active():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -61,9 +76,25 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
     return current_user 
 
 def get_mqtt_adapter(request: Request) -> AiomqttAdapter:
-    """Get MQTT adapter from application state"""
+    """
+    Retrieves the MQTT adapter instance from the FastAPI application state.
+    
+    Args:
+        request: The current FastAPI request object.
+    
+    Returns:
+        The AiomqttAdapter instance stored in the application's state.
+    """
     return request.app.state.mqtt_adapter
 
 def get_mqtt_message_service(request: Request) -> MqttMessageService:
-    """Get MQTT message service from application state"""
+    """
+    Retrieves the MQTT message service instance from the FastAPI application state.
+    
+    Args:
+        request: The current FastAPI request object.
+    
+    Returns:
+        The application's MqttMessageService instance.
+    """
     return request.app.state.mqtt_message_service

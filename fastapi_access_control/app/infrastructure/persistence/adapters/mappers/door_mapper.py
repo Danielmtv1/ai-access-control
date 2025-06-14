@@ -79,7 +79,15 @@ class DoorMapper:
     
     @staticmethod
     def update_model_from_domain(model: DoorModel, door: Door) -> DoorModel:
-        """Actualiza un modelo de base de datos con los datos de una entidad de dominio"""
+        """
+        Updates a DoorModel instance with data from a Door domain entity.
+        
+        Serializes the default access schedule to JSON if present, updates all relevant fields,
+        and sets the updated_at timestamp to the current datetime.
+        
+        Returns:
+            The updated DoorModel instance.
+        """
         # Serialize default schedule to JSON
         default_schedule_json = None
         if door.default_schedule:

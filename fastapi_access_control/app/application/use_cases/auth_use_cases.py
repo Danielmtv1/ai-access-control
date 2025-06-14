@@ -25,7 +25,15 @@ class AuthenticateUserUseCase:
         self.user_repository = user_repository
     
     async def execute(self, email: str, password: str) -> TokenPair:
-        """Authenticate user and return token pair"""
+        """
+        Authenticates a user by email and password and returns a token pair.
+        
+        Raises:
+            AuthenticationError: If the user does not exist, the password is incorrect, or the user account is inactive.
+        
+        Returns:
+            TokenPair: An object containing access and refresh tokens for the authenticated user.
+        """
         logger.info(f"Buscando usuario con email: {email}")
         # Get user by email
         user = await self.user_repository.get_by_email(email)
@@ -93,7 +101,20 @@ class CreateUserUseCase:
                      password: str, 
                      full_name: str,
                      roles: list[str] = None) -> User:
-        """Create new user"""
+        """
+                     Creates a new user account with the specified email, password, full name, and roles.
+                     
+                     If a user with the given email already exists, raises an EntityAlreadyExistsError. The password is securely hashed before storage. If no roles are provided, the user is assigned the default USER role. The new user is created with active status and current UTC timestamps.
+                     
+                     Args:
+                         email: The user's email address.
+                         password: The user's plaintext password.
+                         full_name: The user's full name.
+                         roles: Optional list of role names to assign to the user.
+                     
+                     Returns:
+                         The created User entity.
+                     """
         # Check if user already exists
         existing_user = await self.user_repository.get_by_email(email)
         if existing_user:

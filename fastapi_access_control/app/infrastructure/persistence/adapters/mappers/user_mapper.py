@@ -38,7 +38,18 @@ class UserMapper:
     
     @staticmethod
     def update_model_from_domain(model: UserModel, user: User) -> UserModel:
-        """Actualiza un modelo de base de datos con los datos de una entidad de dominio"""
+        """
+        Updates a UserModel instance with data from a User domain entity.
+        
+        All relevant fields are synchronized, including roles and status, and the updated_at timestamp is set to the current datetime.
+        
+        Args:
+            model: The UserModel instance to update.
+            user: The User domain entity providing updated data.
+        
+        Returns:
+            The updated UserModel instance.
+        """
         model.email = user.email
         model.hashed_password = user.hashed_password
         model.full_name = user.full_name

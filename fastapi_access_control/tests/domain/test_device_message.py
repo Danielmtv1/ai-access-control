@@ -22,7 +22,9 @@ class TestDeviceCommandType:
     """Tests for DeviceCommandType enum."""
     
     def test_command_type_values(self):
-        """Test command type enum values."""
+        """
+        Verifies that DeviceCommandType enum values match their expected string representations.
+        """
         assert DeviceCommandType.UNLOCK.value == "unlock"
         assert DeviceCommandType.LOCK.value == "lock"
         assert DeviceCommandType.STATUS.value == "status"
@@ -45,7 +47,9 @@ class TestDeviceAccessRequest:
     """Tests for DeviceAccessRequest entity."""
     
     def test_device_access_request_creation(self):
-        """Test basic device access request creation."""
+        """
+        Verifies that a DeviceAccessRequest is correctly created with all fields assigned as expected.
+        """
         timestamp = datetime.now(timezone.utc)
         message_id = str(uuid4())
         
@@ -68,7 +72,11 @@ class TestDeviceAccessRequest:
         assert request.location_data["latitude"] == 40.7128
     
     def test_device_access_request_factory_method(self):
-        """Test factory method for creating device access request."""
+        """
+        Tests the DeviceAccessRequest factory method for correct field assignment and default values.
+        
+        Verifies that creating a DeviceAccessRequest using the factory method sets the provided card_id, door_id, device_id, and pin, and automatically assigns non-null timestamp and message_id, with location_data defaulting to None.
+        """
         request = DeviceAccessRequest.create(
             card_id="XYZ789",
             door_id=SAMPLE_DOOR_UUID,
@@ -85,7 +93,9 @@ class TestDeviceAccessRequest:
         assert request.location_data is None
     
     def test_device_access_request_without_pin(self):
-        """Test device access request without PIN."""
+        """
+        Tests creation of a DeviceAccessRequest without a PIN, verifying that the pin attribute is None.
+        """
         request = DeviceAccessRequest.create(
             card_id="DEF456",
             door_id=SAMPLE_DOOR_UUID,
@@ -102,7 +112,9 @@ class TestDeviceAccessResponse:
     """Tests for DeviceAccessResponse entity."""
     
     def test_device_access_response_granted_factory(self):
-        """Test factory method for granted access response."""
+        """
+        Verifies that the `create_granted` factory method of `DeviceAccessResponse` produces a response with correct granted access fields, including reason, duration, user name, card type, and default values for required attributes.
+        """
         response = DeviceAccessResponse.create_granted(
             reason="Access granted for John Doe",
             duration=10,
@@ -138,7 +150,11 @@ class TestDeviceAccessResponse:
         assert response.timestamp is not None
     
     def test_device_access_response_denied_with_pin_required(self):
-        """Test denied response requiring PIN."""
+        """
+        Tests that a denied DeviceAccessResponse correctly indicates a PIN is required.
+        
+        Verifies that the response sets access_granted to False, door_action to REQUIRE_PIN, and requires_pin to True when a PIN is required for access denial.
+        """
         response = DeviceAccessResponse.create_denied(
             reason="PIN required for high-security door",
             requires_pin=True
@@ -196,7 +212,9 @@ class TestDeviceStatus:
     """Tests for DeviceStatus entity."""
     
     def test_device_status_creation(self):
-        """Test device status creation."""
+        """
+        Verifies that a DeviceStatus instance is created with the correct attribute values.
+        """
         last_heartbeat = datetime.now(timezone.utc)
         
         status = DeviceStatus(
@@ -233,7 +251,9 @@ class TestDeviceStatus:
         assert status.is_healthy() is True
     
     def test_device_status_unhealthy_when_offline(self):
-        """Test device is unhealthy when offline."""
+        """
+        Verifies that a device is considered unhealthy when it is offline.
+        """
         status = DeviceStatus(
             device_id="door_lock_001",
             online=False,
@@ -244,7 +264,9 @@ class TestDeviceStatus:
         assert status.is_healthy() is False
     
     def test_device_status_unhealthy_with_low_battery(self):
-        """Test device is unhealthy with low battery."""
+        """
+        Tests that a device is considered unhealthy when its battery level is below the 20% threshold.
+        """
         status = DeviceStatus(
             device_id="door_lock_001",
             online=True,
@@ -255,7 +277,9 @@ class TestDeviceStatus:
         assert status.is_healthy() is False
     
     def test_device_status_unhealthy_with_error(self):
-        """Test device is unhealthy with error message."""
+        """
+        Tests that a device with an error message is considered unhealthy.
+        """
         status = DeviceStatus(
             device_id="door_lock_001",
             online=True,
@@ -271,7 +295,9 @@ class TestDeviceEvent:
     """Tests for DeviceEvent entity."""
     
     def test_device_event_creation(self):
-        """Test basic device event creation."""
+        """
+        Verifies that a DeviceEvent instance is created with the correct attributes.
+        """
         timestamp = datetime.now(timezone.utc)
         message_id = str(uuid4())
         
@@ -293,7 +319,11 @@ class TestDeviceEvent:
         assert event.severity == "info"
     
     def test_device_event_door_opened_factory(self):
-        """Test factory method for door opened event."""
+        """
+        Tests the DeviceEvent.create_door_opened factory method for correct event creation.
+        
+        Verifies that the event is initialized with the provided device_id and card_id, sets the event_type to "door_opened", severity to "info", and assigns non-null timestamp and message_id.
+        """
         event = DeviceEvent.create_door_opened(
             device_id="door_lock_001",
             card_id="ABC123"
@@ -316,7 +346,11 @@ class TestDeviceEvent:
         assert event.severity == "info"
     
     def test_device_event_door_forced_factory(self):
-        """Test factory method for door forced event."""
+        """
+        Tests the factory method for creating a door forced event.
+        
+        Verifies that the created DeviceEvent has the correct device ID, event type, empty details, critical severity, and assigned timestamp and message ID.
+        """
         event = DeviceEvent.create_door_forced(device_id="door_lock_001")
         
         assert event.device_id == "door_lock_001"
@@ -327,7 +361,11 @@ class TestDeviceEvent:
         assert event.message_id is not None
     
     def test_device_event_tamper_alert_factory(self):
-        """Test factory method for tamper alert event."""
+        """
+        Tests the DeviceEvent.create_tamper_alert factory method for generating a tamper alert event.
+        
+        Verifies that the event is created with the correct device ID, event type, details, severity, and that timestamp and message ID are assigned.
+        """
         tamper_details = {
             "sensor": "accelerometer",
             "threshold_exceeded": True,
@@ -351,7 +389,9 @@ class TestCommandAcknowledgment:
     """Tests for CommandAcknowledgment entity."""
     
     def test_command_acknowledgment_creation(self):
-        """Test command acknowledgment creation."""
+        """
+        Verifies that a CommandAcknowledgment instance is created with the correct field values.
+        """
         timestamp = datetime.now(timezone.utc)
         message_id = str(uuid4())
         
@@ -374,7 +414,9 @@ class TestCommandAcknowledgment:
         assert ack.timestamp == timestamp
     
     def test_command_acknowledgment_auto_timestamp(self):
-        """Test command acknowledgment with automatic timestamp."""
+        """
+        Tests that a CommandAcknowledgment instance automatically assigns a timestamp if not provided.
+        """
         ack = CommandAcknowledgment(
             message_id=str(uuid4()),
             device_id="door_lock_001",
@@ -385,7 +427,9 @@ class TestCommandAcknowledgment:
         assert isinstance(ack.timestamp, datetime)
     
     def test_command_acknowledgment_is_successful_true(self):
-        """Test is_successful method returns True for success status."""
+        """
+        Tests that the is_successful() method of CommandAcknowledgment returns True when the status is "success".
+        """
         ack = CommandAcknowledgment(
             message_id=str(uuid4()),
             device_id="door_lock_001",
@@ -395,7 +439,9 @@ class TestCommandAcknowledgment:
         assert ack.is_successful() is True
     
     def test_command_acknowledgment_is_successful_false(self):
-        """Test is_successful method returns False for non-success status."""
+        """
+        Tests that the is_successful() method of CommandAcknowledgment returns False for non-success statuses.
+        """
         statuses = ["failed", "timeout", "invalid", "error"]
         
         for status in statuses:
@@ -408,7 +454,9 @@ class TestCommandAcknowledgment:
             assert ack.is_successful() is False, f"Status '{status}' should not be successful"
     
     def test_command_acknowledgment_with_error(self):
-        """Test command acknowledgment with error details."""
+        """
+        Tests creation of a CommandAcknowledgment with an error message and verifies that it is marked as unsuccessful.
+        """
         ack = CommandAcknowledgment(
             message_id=str(uuid4()),
             device_id="door_lock_001",

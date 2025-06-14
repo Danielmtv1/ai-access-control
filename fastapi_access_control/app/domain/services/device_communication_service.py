@@ -26,12 +26,28 @@ class DeviceCommunicationService:
     """Service for managing bidirectional MQTT communication with IoT devices."""
     
     def __init__(self, mqtt_adapter: AiomqttAdapter):
+        """
+        Initializes the DeviceCommunicationService with the provided MQTT adapter.
+        
+        Sets up internal dictionaries for tracking command callbacks and pending door commands awaiting acknowledgment.
+        """
         self.mqtt_adapter = mqtt_adapter
         self._command_callbacks: Dict[str, Callable] = {}
         self._pending_commands: Dict[str, DoorCommand] = {}
     
     async def publish_access_response(self, device_id: str, response: DeviceAccessResponse) -> bool:
-        """Send access validation response to IoT device."""
+        """
+        Publishes an access validation response to a specified IoT device.
+        
+        Sends a response message to the device indicating whether access is granted, along with related details such as door action, reason, duration, user information, and timestamp.
+        
+        Args:
+            device_id: The unique identifier of the target device.
+            response: The access response details to be sent.
+        
+        Returns:
+            True if the response was published successfully; False otherwise.
+        """
         try:
             topic = f"access/responses/{device_id}"
             payload = {
@@ -55,7 +71,11 @@ class DeviceCommunicationService:
             return False
     
     async def send_door_command(self, command: DoorCommand) -> bool:
-        """Send command to door device."""
+        """
+        Sends a door command to a device via MQTT and tracks it if acknowledgment is required.
+        
+        If the command requires acknowledgment, it is added to the pending commands for later tracking. Returns True if the command is published successfully, or False if an error occurs.
+        """
         try:
             topic = f"access/commands/{command.device_id}"
             payload = {
@@ -80,24 +100,55 @@ class DeviceCommunicationService:
             return False
     
     async def send_unlock_command(self, device_id: str, duration: int = None) -> bool:
-        """Send unlock command to specific device."""
+        """
+        Sends an unlock command to a specific device with an optional duration.
+        
+        If no duration is provided, a default unlock duration is used.
+        
+        Args:
+            device_id: The unique identifier of the device to unlock.
+            duration: Optional duration in seconds for which the device should remain unlocked.
+        
+        Returns:
+            True if the command was sent successfully, False otherwise.
+        """
         if duration is None:
             duration = get_settings().DEFAULT_UNLOCK_DURATION
         command = DoorCommand.create_unlock(device_id, duration)
         return await self.send_door_command(command)
     
     async def send_lock_command(self, device_id: str) -> bool:
-        """Send lock command to specific device."""
+        """
+        Sends a lock command to the specified device.
+        
+        Args:
+            device_id: The unique identifier of the device to lock.
+        
+        Returns:
+            True if the command was sent successfully, False otherwise.
+        """
         command = DoorCommand.create_lock(device_id)
         return await self.send_door_command(command)
     
     async def request_device_status(self, device_id: str) -> bool:
-        """Request status from specific device."""
+        """
+        Sends a status request command to a specific device.
+        
+        Args:
+            device_id: The unique identifier of the device to query.
+        
+        Returns:
+            True if the status request was sent successfully, False otherwise.
+        """
         command = DoorCommand.create_status_request(device_id)
         return await self.send_door_command(command)
     
     async def broadcast_notification(self, message: str, severity: str = "info") -> bool:
-        """Broadcast notification to all devices."""
+        """
+        Sends a broadcast notification message to all devices.
+        
+        Publishes a notification with the specified message and severity to the broadcast topic. Returns True if the notification was sent successfully; otherwise, returns False.
+        """
         try:
             topic = "access/notifications/broadcast"
             payload = {
@@ -116,7 +167,11 @@ class DeviceCommunicationService:
             return False
     
     def parse_device_request(self, topic: str, payload: str) -> Optional[DeviceAccessRequest]:
-        """Parse incoming access request from device."""
+        """
+        Parses an incoming device access request message from an MQTT topic and payload.
+        
+        Extracts the device ID from the topic and required fields from the JSON payload. Returns a DeviceAccessRequest object if parsing is successful and all required fields are present; otherwise, returns None.
+        """
         try:
             # Extract device_id from topic: access/requests/{device_id}
             topic_parts = topic.split('/')
@@ -149,7 +204,18 @@ class DeviceCommunicationService:
             return None
     
     def parse_command_acknowledgment(self, topic: str, payload: str) -> Optional[CommandAcknowledgment]:
-        """Parse command acknowledgment from device."""
+        """
+        Parses a command acknowledgment message from a device.
+        
+        Extracts the device ID from the MQTT topic and constructs a CommandAcknowledgment object from the JSON payload. Removes the acknowledged command from the pending commands if present.
+        
+        Args:
+            topic: The MQTT topic string, expected in the format 'access/commands/{device_id}/ack'.
+            payload: The JSON-formatted acknowledgment payload.
+        
+        Returns:
+            A CommandAcknowledgment object if parsing is successful; otherwise, None.
+        """
         try:
             # Extract device_id from topic: access/commands/{device_id}/ack
             topic_parts = topic.split('/')
@@ -182,7 +248,11 @@ class DeviceCommunicationService:
             return None
     
     def parse_device_status(self, topic: str, payload: str) -> Optional[DeviceStatus]:
-        """Parse device status update."""
+        """
+        Parses a device status update message from an MQTT topic and payload.
+        
+        Extracts the device ID from the topic and constructs a DeviceStatus object using the provided JSON payload. Returns None if the topic format is invalid or the payload cannot be parsed.
+        """
         try:
             # Extract device_id from topic: access/devices/{device_id}/status
             topic_parts = topic.split('/')
@@ -209,7 +279,11 @@ class DeviceCommunicationService:
             return None
     
     def parse_device_event(self, topic: str, payload: str) -> Optional[DeviceEvent]:
-        """Parse device event."""
+        """
+        Parses a device event message from an MQTT topic and payload.
+        
+        Extracts the device ID and event type from the topic or payload, and constructs a DeviceEvent object with relevant details. Returns None if the topic format is invalid or parsing fails.
+        """
         try:
             # Extract info from topic: access/events/{type}/{device_id} or access/events/{device_id}
             topic_parts = topic.split('/')
@@ -241,11 +315,21 @@ class DeviceCommunicationService:
             return None
     
     def get_pending_commands(self) -> Dict[str, DoorCommand]:
-        """Get list of pending commands awaiting acknowledgment."""
+        """
+        Returns a copy of the dictionary of door commands currently awaiting acknowledgment.
+        
+        Returns:
+            A dictionary mapping message IDs to DoorCommand instances that have not yet been acknowledged.
+        """
         return self._pending_commands.copy()
     
     def cleanup_expired_commands(self, max_age_seconds: int = None):
-        """Remove commands that have been pending too long."""
+        """
+        Removes pending commands that have exceeded the allowed age.
+        
+        Commands in the pending queue older than `max_age_seconds` are deleted. The default
+        timeout is determined by application settings if not specified.
+        """
         if max_age_seconds is None:
             max_age_seconds = get_settings().MQTT_COMMAND_CLEANUP_SECONDS
         current_time = datetime.now(timezone.utc)
@@ -261,7 +345,11 @@ class DeviceCommunicationService:
             logger.warning(f"Command {message_id} expired after {max_age_seconds} seconds")
     
     async def handle_emergency_lockdown(self, reason: str) -> bool:
-        """Trigger emergency lockdown for all devices."""
+        """
+        Initiates an emergency lockdown command to all devices.
+        
+        Sends an emergency lock command with the provided reason to all devices via MQTT. Returns True if the command is published successfully, otherwise returns False.
+        """
         try:
             topic = "access/commands/emergency/lockdown"
             payload = {
